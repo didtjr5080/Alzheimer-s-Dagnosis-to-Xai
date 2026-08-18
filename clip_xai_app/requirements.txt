@@ -1,0 +1,15 @@
+gradio
+fastapi>=0.115.2,<1.0
+joblib
+matplotlib
+numpy
+pandas
+pillow
+pypdf
+python-multipart>=0.0.32
+reportlab
+scikit-learn
+safetensors
+starlette>=0.40.0,<1.0
+torch
+transformers

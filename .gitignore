@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Generated application artifacts
+clip_xai_app/artifacts/verification/*
+clip_xai_app/artifacts/heatmaps/*
+clip_xai_app/artifacts/reports/*
+!clip_xai_app/artifacts/verification/.gitkeep
+!clip_xai_app/artifacts/heatmaps/.gitkeep
+!clip_xai_app/artifacts/reports/.gitkeep
+
+# Local handoff/model payloads are intentionally not source artifacts.
+clip_xai_app/handoff/*
+clip_lr_grad_eclip_handoff_v1_20260812_105027/models/
+clip_lr_grad_eclip_handoff_v1_20260812_105027/data/embeddings/
+clip_lr_grad_eclip_handoff_v1_20260812_105027/data/xai_samples/images/

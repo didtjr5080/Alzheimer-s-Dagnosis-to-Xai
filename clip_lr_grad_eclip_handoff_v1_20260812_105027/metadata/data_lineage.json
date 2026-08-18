@@ -1,0 +1,20 @@
+{
+  "source_notebook": "학습.ipynb",
+  "source_cell_index": 130,
+  "source_notebook_sha256": "8f93cad264562317fb073b1da7335188535c6d6df93640a235ca088ccd4581f0",
+  "original_manifest_sha256": "5f6dcc0fa2a0c25fd4675688343046c93f70c5bf68a63bfc3a6ad355c7451629",
+  "original_reference_csv_sha256": "1e2bf036f6aaa71a163f3d5f784a71a991452146d9132b6554c6765fcc916a87",
+  "provenance": {
+    "clip_model": "새 런타임에서 clip_model.save_pretrained()로 저장. 원본 셀 #130과 동일 코드로 로드.",
+    "clip_lr_classifier": "new_run 실행에서 clf.fit()으로 학습됨. 원본 test_probs_clip.csv를 만든 최초 실행의 clf 객체/임베딩 캐시는 저장된 적이 없어 소실됨.",
+    "train_test_embeddings": "new_run 실행에서 GPU로 재추출됨 (청크 저장). 원본 임베딩과 비트 단위 동일하지 않음(환경 드리프트 추정).",
+    "test_probs_clip_new_run.csv": "new_run 실행 결과. 원본과 예측 클래스 100% 일치, 확률 최대 절대오차 0.0088.",
+    "xai_samples": "new_run test set에서 클래스별 정답1/오답1 선정 (총 6 subject, 152 slice)."
+  },
+  "known_limitations": [
+    "OAS31378_MR_d0196 subject가 원본/new_run 모두에서 test_probs_clip에 누락됨 (원인 미상, 195명 중 194명만 존재).",
+    "슬라이스 정제 전 manifest(slice_manifest_large.csv)가 사용됨. 정제 후 manifest(slice_manifest_large_clean.csv)는 사용되지 않음.",
+    "new_run과 원본 test_probs_clip.csv 사이 확률 최대 절대오차 0.0088~0.0140 (환경/하드웨어 드리프트로 추정, 재실행 간 결정론적 재현은 확인됨).",
+    "원본 실행의 정확한 환경(GPU 종류, 라이브러리 버전)은 기록되지 않아 사후 확인 불가."
+  ]
+}

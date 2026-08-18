@@ -1,0 +1,47 @@
+{
+  "model_type": "CLIP_image_embedding + LogisticRegression",
+  "clip_model_id": "openai/clip-vit-base-patch16",
+  "clip_commit_hash": "57c216476eefef5ab752ec549e440a49ae4ae5f3",
+  "clip_image_feature_dim": 512,
+  "clip_feature_normalization_applied": false,
+  "lr_params": {
+    "C": 1.0,
+    "class_weight": null,
+    "dual": false,
+    "fit_intercept": true,
+    "intercept_scaling": 1,
+    "l1_ratio": null,
+    "max_iter": 2000,
+    "multi_class": "deprecated",
+    "n_jobs": null,
+    "penalty": "l2",
+    "random_state": null,
+    "solver": "lbfgs",
+    "tol": 0.0001,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "lr_classes_idx": [
+    0,
+    1,
+    2
+  ],
+  "class_name_mapping": {
+    "0": "CN",
+    "1": "MCI",
+    "2": "AD"
+  },
+  "coef_shape": [
+    3,
+    512
+  ],
+  "intercept_shape": [
+    3
+  ],
+  "n_features_in": 512,
+  "sklearn_version": "1.6.1",
+  "source_notebook": "학습.ipynb",
+  "source_cell_index": 130,
+  "run_type": "new_run",
+  "run_note": "원본 test_probs_clip.csv를 생성한 실행의 clf/임베딩은 캐시되지 않아 소실됨. 본 clf는 동일 코드/데이터로 재실행한 new_run이며, 예측 클래스는 원본과 100% 일치하나 확률값에 최대 약 0.88~1.4% 편차가 있음 (원인: 환경 드리프트로 추정, 재실행 간 비트 단위 재현은 확인됨)."
+}

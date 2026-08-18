@@ -1,0 +1,5 @@
+version: "explanation-rule-v1"
+top1_low_threshold: 0.50
+margin_boundary_threshold: 0.10
+margin_moderate_threshold: 0.25
+clinical_validation: false

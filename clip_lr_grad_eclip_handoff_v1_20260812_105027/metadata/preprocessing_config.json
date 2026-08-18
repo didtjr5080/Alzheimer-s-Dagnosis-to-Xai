@@ -1,0 +1,33 @@
+{
+  "input_format": "coronal MRI 파생 PNG, RGB 변환 후 사용",
+  "image_processor": "CLIPProcessor.image_processor (CLIPImageProcessor)",
+  "processor_settings": {
+    "crop_size": {
+      "height": 224,
+      "width": 224
+    },
+    "do_center_crop": true,
+    "do_convert_rgb": true,
+    "do_normalize": true,
+    "do_rescale": true,
+    "do_resize": true,
+    "image_mean": [
+      0.48145466,
+      0.4578275,
+      0.40821073
+    ],
+    "image_processor_type": "CLIPImageProcessor",
+    "image_std": [
+      0.26862954,
+      0.26130258,
+      0.27577711
+    ],
+    "resample": 3,
+    "rescale_factor": 0.00392156862745098,
+    "size": {
+      "shortest_edge": 224
+    }
+  },
+  "feature_extraction": "clip_model.get_image_features(pixel_values=...) -> pooler_output, L2 정규화 미적용",
+  "aggregation": "슬라이스별 predict_proba를 MR_ID(subject)별로 단순 평균"
+}

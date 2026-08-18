@@ -1,0 +1,33 @@
+{
+  "method_name": "Grad-CAM-style gradient heatmap on CLIP ViT last-layer Value vectors (attention component removed)",
+  "target_type": "logistic_regression_class_logit",
+  "target_formula": "z_c = W_c f_CLIP(x) + b_c",
+  "note": "원 논문형 Grad-ECLIP은 이미지-텍스트 유사도를 목표로 하지만, 본 모델은 텍스트 유사도 분류기가 아니라 CLIP 이미지 임베딩 위에 학습된 LR이므로 목표 점수를 LR class logit으로 대체한 응용형(application variant)임.",
+  "feature_normalization_applied": false,
+  "vision_attention_module": "clip_model.vision_model.encoder.layers[-1].self_attn",
+  "q_proj": "clip_model.vision_model.encoder.layers[-1].self_attn.q_proj",
+  "k_proj": "clip_model.vision_model.encoder.layers[-1].self_attn.k_proj",
+  "v_proj": "clip_model.vision_model.encoder.layers[-1].self_attn.v_proj",
+  "out_proj": "clip_model.vision_model.encoder.layers[-1].self_attn.out_proj",
+  "image_size": 224,
+  "patch_size": 16,
+  "grid_size": [
+    14,
+    14
+  ],
+  "num_patches": 196,
+  "has_cls_token": true,
+  "hidden_size": 768,
+  "num_attention_heads": 12,
+  "projection_dim": 512,
+  "classes": {
+    "0": "CN",
+    "1": "MCI",
+    "2": "AD"
+  },
+  "class_order_source": "clf.classes_ (sklearn) — 반드시 이 순서를 그대로 사용할 것, 하드코딩 금지",
+  "requires_grad_enabled": true,
+  "torch_no_grad_warning": "XAI forward 계산 시 torch.no_grad()를 절대 사용하지 말 것 — gradient 흐름이 차단되어 Grad-ECLIP이 작동하지 않음.",
+  "method_change_note": "당초 CLS->patch attention weight를 gradient와 결합할 계획이었으나, 12개 vision attention head 중 9개가 배경(뇌 없는 영역)에 구조적으로 쏠리는 attention sink 패턴이 확인되어 채택하지 않음. 최종적으로 attention 성분 없이 gradient(Grad-CAM 스타일)만 사용. 6개 XAI 샘플 정량 검증(배경 대비 전경 히트맵 평균) 5/6 통과, 상세는 reports/grad_eclip_validation.md 참조.",
+  "validated_on_xai_samples": "5/6 passed foreground>background heatmap intensity check"
+}
