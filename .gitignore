@@ -10,6 +10,8 @@ venv/
 clip_xai_app/artifacts/verification/*
 clip_xai_app/artifacts/heatmaps/*
 clip_xai_app/artifacts/reports/*
+clip_xai_app/artifacts/xai/*
+clip_xai_app/artifacts/xai_artifact_index.csv
 !clip_xai_app/artifacts/verification/.gitkeep
 !clip_xai_app/artifacts/heatmaps/.gitkeep
 !clip_xai_app/artifacts/reports/.gitkeep
@@ -19,3 +21,6 @@ clip_xai_app/handoff/*
 clip_lr_grad_eclip_handoff_v1_20260812_105027/models/
 clip_lr_grad_eclip_handoff_v1_20260812_105027/data/embeddings/
 clip_lr_grad_eclip_handoff_v1_20260812_105027/data/xai_samples/images/
+
+# Graph XAI extension: generated per-run reports/exports and its test cache.
+graph_xai_extension/outputs/

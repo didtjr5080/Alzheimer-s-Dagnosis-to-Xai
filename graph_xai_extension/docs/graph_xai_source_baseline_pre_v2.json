@@ -1,0 +1,122 @@
+{
+  "generated_for": "Graph_XAI_추가개선_수정작업지시서 baseline (pre-improvement)",
+  "file_count": 29,
+  "files": {
+    "config.example.yaml": {
+      "sha256": "41e7b6c19fa75f1078c2cfd193223a32dcfe8af8d29b7ecd56e1c021af95e34a",
+      "size": 1192
+    },
+    "README.md": {
+      "sha256": "a49094a8d4c60ef1e67b44356e11d566d706af43b16915bdce518386c8138535",
+      "size": 9376
+    },
+    "requirements_graph_xai.txt": {
+      "sha256": "0b5c78bafd05fa01d3a04260b96b050fe0b65ed33292b27ce8a546dacf085ab2",
+      "size": 115
+    },
+    "run_graph_xai.py": {
+      "sha256": "92afaa6331d7da757aacb4749c979c5f405ca2d122971229da30ab4745a68634",
+      "size": 10022
+    },
+    "docs/IMPLEMENTATION_REPORT.md": {
+      "sha256": "01346fcf29314c5bad3d5ad6387c9c3376c6d45f486dcf7a92b7a77ff7a6706f",
+      "size": 7919
+    },
+    "docs/INTEGRATION_GUIDE.md": {
+      "sha256": "b6e4bbd44f826e7c2a3be1bce5f8baa1c9ea7b40cef08d9a1fbe3b63ea787d59",
+      "size": 5362
+    },
+    "docs/LEGACY_ISSUES.md": {
+      "sha256": "78c87bb9949e445d430720949fc01950b65219368275b8c9f18fd3044a828560",
+      "size": 5532
+    },
+    "docs/preexisting_files_manifest.json": {
+      "sha256": "e263f91e0f9fb005c20c58454e0dbe9e55009563a662aefcf7f284595c545275",
+      "size": 80077
+    },
+    "graph_xai/cam_adapter.py": {
+      "sha256": "1cc4c63cc1e42a7f87df0c16f9bf8fca29ac96f87a8dfdab2dba06c9a7180188",
+      "size": 841
+    },
+    "graph_xai/exporter.py": {
+      "sha256": "ae2df2d0219a4e8902826ed92b9a5faddc8f7c276231f4a0282617d3c05f760c",
+      "size": 4058
+    },
+    "graph_xai/graph_builder.py": {
+      "sha256": "de969cf81875c6046fd7262a8a6a75ad5015eff4d753249e6a6c26bf9ebcd71e",
+      "size": 2068
+    },
+    "graph_xai/legacy_adapter.py": {
+      "sha256": "c02a9f39e7fbd31d76bdd354f414dbe4dcb09e740136a2807dd4c19d5d5930a1",
+      "size": 6046
+    },
+    "graph_xai/masking.py": {
+      "sha256": "c2c8a47588bba1e6cce38345cbfae1c19a950a57aa9e7bf51d6a0a74a236f3c5",
+      "size": 4429
+    },
+    "graph_xai/model_adapter.py": {
+      "sha256": "27ad93bf527d22f36ea4a307770d85ecfa95501e33e9d4ab7b7cbcce50080b60",
+      "size": 2627
+    },
+    "graph_xai/pdf_report.py": {
+      "sha256": "893cb0fb19a2ab6ca5af8280b18520b65a3f8c0e1acac624fe9e7b2bd99b0232",
+      "size": 13695
+    },
+    "graph_xai/perturbation.py": {
+      "sha256": "05ca217294859f757ee4ecd8a8e5939e6b453fa408189306efb269c3ec702451",
+      "size": 2611
+    },
+    "graph_xai/region_grid.py": {
+      "sha256": "f4021527e553951b9b92744222df49d77e792c6a88eed65a9c9f6745e39bbe8d",
+      "size": 3788
+    },
+    "graph_xai/schemas.py": {
+      "sha256": "4abfe85f5d469be1eab3469cc9a502b119a4547d5a8da6a16877d9ecd0e5fdbc",
+      "size": 1478
+    },
+    "graph_xai/visualization.py": {
+      "sha256": "c4a16dd68e3c6c3a157e8915e4d25c4497380c710944e07908d9431c0f7f6a5c",
+      "size": 6560
+    },
+    "graph_xai/__init__.py": {
+      "sha256": "5dbf92335205b5fb130bc601721de94be7a058dc8415ce335320845a348e4b7c",
+      "size": 344
+    },
+    "tests/conftest.py": {
+      "sha256": "dc580db60b7acf6eac6688c46272628dff5982ab6850a3319fbfb10f26132c16",
+      "size": 1711
+    },
+    "tests/test_existing_files_unchanged.py": {
+      "sha256": "c6c822c2681f8c4e6c42b6087ba8b2d55a43417612d506392182598ee6c44380",
+      "size": 4429
+    },
+    "tests/test_graph_builder.py": {
+      "sha256": "c83add3e6440ab096ef5b74f02bc7917106e77b5676232e0a59674db24ef10d2",
+      "size": 2118
+    },
+    "tests/test_integration.py": {
+      "sha256": "fe6a582614a567ab587e373c31426448ce36ed45e4a0cdf956d1bc3cb09ca89a",
+      "size": 5241
+    },
+    "tests/test_masking.py": {
+      "sha256": "0538f57596d5d749ca439691b87dd528d1d4104f4fd296766a33053fc6187de6",
+      "size": 4140
+    },
+    "tests/test_pdf_report.py": {
+      "sha256": "1e367e0c4ccc07920ad8d57101a69b609d7cd451c7fe0e958d9dd1740984a07d",
+      "size": 3657
+    },
+    "tests/test_perturbation.py": {
+      "sha256": "479ecdb9ddabbc5a75d95f69e2080ea1e846203de779c29ae64860ac905908ca",
+      "size": 4142
+    },
+    "tests/test_region_grid.py": {
+      "sha256": "0a99e29b46dc59d9a49deee8bae43768369e10036bacaaa3c782e0368dd81a3f",
+      "size": 3891
+    },
+    "tests/_mock_model.py": {
+      "sha256": "639f321d8f6bf4ce10edc6892aff48b2490ca331ec2f4162586bdfec6b197c4f",
+      "size": 1529
+    }
+  }
+}

@@ -3,3 +3,9 @@ top1_low_threshold: 0.50
 margin_boundary_threshold: 0.10
 margin_moderate_threshold: 0.25
 clinical_validation: false
+heatmap_validation:
+  mask_method: largest_component_intensity
+  intensity_threshold: 0.08
+  top_activation_percent: 5.0
+  minimum_brain_fraction: 0.10
+  maximum_brain_fraction: 0.70

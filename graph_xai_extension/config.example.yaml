@@ -1,0 +1,27 @@
+# Copy this file to config.yaml (or just export the equivalent environment
+# variables below) and edit as needed. Environment variables always take
+# precedence over this file; this file is documentation of what they mean,
+# not something run_graph_xai.py parses automatically.
+
+# Path to the trained classifier joblib file, OR the handoff package root
+# directory that contains models/clip_model, models/clip_processor, and a
+# *.joblib classifier. If unset, defaults to the repo's
+# clip_lr_grad_eclip_handoff_v1_20260812_105027 directory.
+# env: GRAPH_XAI_CLASSIFIER_PATH
+classifier_path: ""
+
+# Where CSV/JSON/HTML results are written. If unset, defaults to
+# graph_xai_extension/outputs/ (never a pre-existing project folder).
+# env: GRAPH_XAI_OUTPUT_DIR
+output_dir: "outputs"
+
+# "cpu", "cuda", or unset to auto-detect (cuda if available, else cpu).
+# env: GRAPH_XAI_DEVICE
+device: ""
+
+# Grid size per axis. The work order specifies 3 (3x3 = 9 regions); other
+# values are supported by the underlying code but not by the fixed region
+# names used in the UI/graph, so leave this at 3 unless you also adapt
+# graph_xai/schemas.py's REGION_NAMES_3X3.
+# env: GRAPH_XAI_GRID_SIZE
+grid_size: 3

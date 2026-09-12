@@ -1,0 +1,60 @@
+models:
+  - model_id: legacy_clip_lr
+    status: AVAILABLE
+    execution_mode: live_png_inference
+    inputs:
+      - coronal_png_slice
+      - multi_slice_subject
+    class_order_source: clf.classes_ plus metadata/model_config.json
+    xai_method: LR class logit based CLIP ViT gradient heatmap
+
+  - model_id: merged_clip_reference
+    status: AVAILABLE
+    execution_mode: reference_csv_by_scan_id
+    source: merged_project/clip_test_probs.csv
+    class_order: [CN, MCI, AD]
+    dynamic_inference_status: BLOCKED_MODEL_CONTRACT
+    block_reason: clip_best.pt stores class_embeds only; CLIP backbone and preprocessing linkage are not present.
+
+  - model_id: merged_clip_checkpoint
+    status: BLOCKED_MODEL_CONTRACT
+    source: merged_project/checkpoints/clip_best.pt
+    block_reason: checkpoint contains class_embeds and epoch but not a complete CLIP image encoder contract.
+
+  - model_id: cnn3d_reference
+    status: AVAILABLE
+    execution_mode: reference_csv_by_scan_id
+    source: merged_project/3dcnn_test_probs.csv
+    class_order: [CN, MCI, AD]
+    dynamic_inference_status: BLOCKED_MODEL_CONTRACT
+    block_reason: checkpoint state_dict is readable, but the model class and preprocessing contract are absent.
+
+  - model_id: cnn3d_checkpoint
+    status: BLOCKED_MODEL_CONTRACT
+    source: merged_project/checkpoints/3dcnn_best.pt
+    block_reason: model architecture code and training preprocessing are required before live 3D CNN inference or Grad-CAM.
+
+  - model_id: gbm_reference
+    status: AVAILABLE
+    execution_mode: reference_csv_by_scan_id
+    source: merged_project/gbm_hierarchical_test_probs.csv
+    class_order: [CN, MCI, AD]
+    dynamic_inference_status: BLOCKED_PREPROCESSING_CONTRACT
+    feature_order:
+      - Hippocampus_ratio
+      - Amygdala_ratio
+      - LateralVentricle_ratio
+      - InfLatVent_ratio
+      - Entorhinal_ratio
+      - Thalamus_ratio
+      - Accumbens_ratio
+      - BrainStem_ratio
+      - AgeatEntry
+      - GENDER
+      - is_adni
+    block_reason: live GBM inference requires explicit is_adni construction and missing-value policy.
+
+  - model_id: ensemble_reference
+    status: BLOCKED_MODEL_CONTRACT
+    source: merged_project/final_ensemble_results.csv
+    block_reason: final pred is present, but final ensemble probability columns and exact combining rule are not recoverable.

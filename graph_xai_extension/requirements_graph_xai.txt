@@ -1,0 +1,14 @@
+gradio
+numpy
+pandas
+pillow
+torch
+transformers
+scikit-learn
+scipy
+joblib
+networkx
+plotly
+matplotlib
+reportlab
+pypdf

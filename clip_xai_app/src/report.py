@@ -28,6 +28,16 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from .xai_artifacts import (
+    MASK_METHOD,
+    MASK_THRESHOLD,
+    MAXIMUM_BRAIN_FRACTION,
+    MINIMUM_BRAIN_FRACTION,
+    file_sha256,
+    load_sample_manifest,
+    parse_slice_filename,
+)
+
 
 KST = ZoneInfo("Asia/Seoul")
 
@@ -360,6 +370,173 @@ def _model_info_table(table_style: TableStyle) -> Table:
     return table
 
 
+def _prob_sum(probabilities: dict[str, float]) -> float:
+    return float(sum(float(value) for value in probabilities.values()))
+
+
+def _short_digest(value: str | None) -> str:
+    if not value:
+        return "NA"
+    text = str(value)
+    if len(text) <= 28:
+        return text
+    return f"{text[:12]}<br/>{text[-12:]}"
+
+
+def _field_label(value: str, styles) -> Paragraph:
+    return Paragraph(value.replace("_", "_<br/>") if len(value) > 22 else value, styles["SmallKorean"])
+
+
+def _prediction_status_text(true_label: str | None, predicted_class: str) -> str:
+    if not true_label:
+        return "unknown"
+    return "correct" if true_label == predicted_class else "incorrect / 오분류"
+
+
+def _artifact_slice_token(path: Path) -> tuple[str | None, int | None]:
+    matches = re.findall(r"(?:^|_)(cor|sag|ax|axi)(\d{3})(?=_|\.|$)", Path(path).name, flags=re.IGNORECASE)
+    if len(matches) != 1:
+        return None, None
+    axis, index = matches[0]
+    axis = axis.lower()
+    if axis == "axi":
+        axis = "ax"
+    return axis, int(index)
+
+
+def _assert_probabilities_sum_to_one(label: str, probabilities: dict[str, float], tolerance: float = 1e-4) -> None:
+    total = _prob_sum(probabilities)
+    if abs(total - 1.0) > tolerance:
+        raise ValueError(f"{label} probabilities must sum to 1 within {tolerance}: {total:.8f}")
+
+
+def _validate_report_artifacts(payload: ReportPayload) -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    manifest = load_sample_manifest(repo_root)
+    slices_by_name = {item.filename: item for item in payload.slices}
+
+    for item in payload.slices:
+        _assert_probabilities_sum_to_one(item.filename, item.probabilities)
+    if payload.subject_prediction is not None:
+        _assert_probabilities_sum_to_one(payload.subject_prediction.mr_id, payload.subject_prediction.probabilities)
+
+    for item in payload.xai_items:
+        artifact = item.get("artifact")
+        if artifact is None:
+            continue
+        p = artifact.provenance
+        v = artifact.validation
+        if p.slice_filename not in slices_by_name:
+            raise ValueError(f"XAI artifact slice is not in report payload: {p.slice_filename}")
+        slice_row = slices_by_name[p.slice_filename]
+        expected_status = _prediction_status_text(p.true_label, p.predicted_class).split(" / ")[0]
+        actual_status = "unknown" if p.prediction_correct is None else "correct" if p.prediction_correct else "incorrect"
+        if actual_status != expected_status:
+            raise ValueError(f"prediction_status mismatch for {p.slice_filename}: {actual_status} != {expected_status}")
+        if slice_row.predicted_class != p.predicted_class:
+            raise ValueError(f"predicted_class mismatch for {p.slice_filename}")
+        for class_name, value in slice_row.probabilities.items():
+            observed = float(p.slice_probabilities.get(class_name, -1.0))
+            if abs(observed - float(value)) > 1e-4:
+                raise ValueError(f"slice probability mismatch for {p.slice_filename} / {class_name}")
+
+        manifest_row = manifest.get(p.slice_filename)
+        if manifest_row:
+            if p.true_label != manifest_row.get("true_class"):
+                raise ValueError(f"true_label mismatch against manifest for {p.slice_filename}")
+            for class_name in ("CN", "MCI", "AD"):
+                key = f"{class_name}_prob_slice"
+                if key in manifest_row and abs(float(manifest_row[key]) - float(slice_row.probabilities.get(class_name, 0.0))) > 0.005:
+                    raise ValueError(f"manifest probability mismatch for {p.slice_filename} / {class_name}")
+            manifest_predicted = max(("CN", "MCI", "AD"), key=lambda name: float(manifest_row.get(f"{name}_prob_slice", 0.0)))
+            if p.predicted_class != manifest_predicted:
+                raise ValueError(f"manifest predicted_class mismatch for {p.slice_filename}")
+            manifest_status = "correct" if manifest_row.get("true_class") == manifest_predicted else "incorrect"
+            if actual_status != manifest_status:
+                raise ValueError(f"manifest prediction_status mismatch for {p.slice_filename}")
+
+        _, expected_axis, expected_index = parse_slice_filename(p.slice_filename)
+        for artifact_path in (
+            artifact.original_path,
+            artifact.raw_heatmap_npy_path,
+            artifact.normalized_heatmap_png_path,
+            artifact.overlay_path,
+        ):
+            if not artifact_path.exists():
+                raise ValueError(f"missing artifact file: {artifact_path}")
+            axis, index = _artifact_slice_token(artifact_path)
+            if axis != expected_axis or index != expected_index:
+                raise ValueError(f"artifact slice key mismatch for {artifact_path.name}")
+
+        hash_checks = [
+            (artifact.original_path, p.original_sha256, "original_sha256"),
+            (artifact.raw_heatmap_npy_path, p.raw_heatmap_sha256, "raw_heatmap_sha256"),
+            (artifact.normalized_heatmap_npy_path, p.normalized_heatmap_sha256, "normalized_heatmap_sha256"),
+            (artifact.normalized_heatmap_png_path, p.heatmap_png_sha256, "heatmap_png_sha256"),
+            (artifact.overlay_path, p.overlay_sha256, "overlay_sha256"),
+        ]
+        for artifact_path, expected_hash, field in hash_checks:
+            if not expected_hash or file_sha256(artifact_path) != expected_hash:
+                raise ValueError(f"provenance hash mismatch: {field}")
+        if v.qc_status == "PASS_BASIC_SPATIAL_QC" and v.foreground_background_ratio < 1.25:
+            raise ValueError("QC contradiction: borderline foreground/background ratio marked PASS")
+
+
+def _artifact_summary_section(payload: ReportPayload, styles, table_style: TableStyle) -> list:
+    rows = [["slice", "true", "pred", "status", "XAI target", "analysis_id"]]
+    warnings = []
+    for item in payload.xai_items:
+        artifact = item.get("artifact")
+        if artifact is None:
+            continue
+        p = artifact.provenance
+        status = _prediction_status_text(p.true_label, p.predicted_class)
+        rows.append([
+            Paragraph(p.slice_filename, styles["SmallKorean"]),
+            p.true_label or "NA",
+            p.predicted_class,
+            Paragraph(status.replace(" / ", "<br/>"), styles["SmallKorean"]),
+            Paragraph(f"{p.target_class}<br/>{p.target_score_type}", styles["SmallKorean"]),
+            Paragraph(_short_digest(p.analysis_id), styles["SmallKorean"]),
+        ])
+        if p.true_label == "MCI" and p.predicted_class == "CN":
+            warnings.append(
+                "오분류: 실제 라벨은 MCI이고 모델 예측은 CN입니다. "
+                "이 히트맵은 MCI 병변이 아니라 모델의 CN 예측 logit에 기여한 입력 영역을 설명합니다."
+            )
+        elif p.prediction_correct is False:
+            warnings.append(
+                f"오분류: 실제 라벨은 {p.true_label}, 모델 예측은 {p.predicted_class}입니다. "
+                f"히트맵은 선택된 XAI target({p.target_class} logit)을 설명합니다."
+            )
+    if len(rows) == 1:
+        return []
+    table = Table(rows, repeatRows=1, colWidths=[44 * mm, 14 * mm, 14 * mm, 30 * mm, 42 * mm, 22 * mm])
+    table.setStyle(table_style)
+    story = [Paragraph("Result summary / XAI target", styles["Heading2"]), table, Spacer(1, 6)]
+    for warning in warnings:
+        story.append(Paragraph(warning, styles["SmallKorean"]))
+    story.append(Spacer(1, 8))
+    return story
+
+
+def _performance_section(styles) -> list:
+    manifest = load_sample_manifest(Path(__file__).resolve().parents[2])
+    class_counts: dict[str, set[str]] = {}
+    for row in manifest.values():
+        class_counts.setdefault(row.get("true_class", "unknown"), set()).add(row.get("MR_ID", ""))
+    count_text = ", ".join(
+        f"{class_name}={len(class_counts.get(class_name, set()))}" for class_name in ("CN", "MCI", "AD")
+    ) or "unavailable"
+    block = [
+        Paragraph("Performance and validation context", styles["Heading2"]),
+        Paragraph("Evaluation split: handoff reference evaluation split; subject count: 194.", styles["BodyText"]),
+        Paragraph(f"Class sample counts by subject in XAI manifest: {count_text}.", styles["BodyText"]),
+        Paragraph("Subject Accuracy 72.2%, Macro-F1 0.435.", styles["BodyText"]),
+    ]
+    return [KeepTogether(block)]
+
+
 def _slice_summary_table(payload: ReportPayload, table_style: TableStyle) -> Table:
     rows = [["인덱스", "파일명", "모델 예측 클래스", "CN", "MCI", "AD"]]
     for item in payload.slices:
@@ -469,6 +646,13 @@ def _prediction_evidence_section(payload: ReportPayload, styles) -> list:
         "상대적으로 크게 기여한 CLIP ViT 내부 영역입니다. 전경 마스크가 없는 현재 보고서에서는 "
         "전경/배경 평균값을 별도 정량값으로 만들지 않으며, 비뇌 배경에도 활성값이 나타날 수 있습니다."
     )
+    heatmap_text = (
+        f"Heatmap bright regions explain the selected Logistic Regression logit for {evidence.top1_class}. "
+        f"The report uses an automatic brain mask: method={MASK_METHOD}, grayscale MRI resized to 224x224, "
+        f"threshold={MASK_THRESHOLD:.2f}, valid brain_fraction range={MINIMUM_BRAIN_FRACTION:.2f}-"
+        f"{MAXIMUM_BRAIN_FRACTION:.2f}. This intensity mask is not clinical segmentation; low contrast, "
+        "skull-strip errors, or non-brain high-intensity pixels can affect foreground/background QC."
+    )
     uncertainty_text = (
         f"{evidence.top1_class}와 두 번째 후보 {evidence.top2_class}의 출력 확률 차이는 "
         f"{margin_percent:.2f}%p이며, 설정된 연구용 설명 규칙에서는 `{evidence.uncertainty_level}`로 "
@@ -519,6 +703,7 @@ def _xai_sections(payload: ReportPayload, styles, table_style: TableStyle, temp_
         return story
 
     for item_index, item in enumerate(payload.xai_items):
+        artifact = item.get("artifact")
         image_paths = [
             _save_temp_image(item["original"], temp_dir / f"{item_index}_original.png"),
             _save_temp_image(item["heatmap"], temp_dir / f"{item_index}_heatmap.png"),
@@ -538,12 +723,47 @@ def _xai_sections(payload: ReportPayload, styles, table_style: TableStyle, temp_
             Paragraph("오버레이는 원본 MRI 위에 모델 점수 기여 영역을 겹쳐 표시한 것입니다.", styles["SmallKorean"]),
             Spacer(1, 8),
         ])
+        if artifact is not None:
+            p = artifact.provenance
+            v = artifact.validation
+            prediction_status = "unknown" if p.prediction_correct is None else "correct" if p.prediction_correct else "incorrect"
+            qc_table = Table([
+                ["field", "value"],
+                [_field_label("analysis_id", styles), Paragraph(_short_digest(p.analysis_id), styles["SmallKorean"])],
+                [_field_label("slice_filename", styles), p.slice_filename],
+                [_field_label("dataset / scan", styles), f"{p.dataset_id} / {p.scan_id}"],
+                [_field_label("true / pred / target", styles), f"{p.true_label or 'NA'} / {p.predicted_class} / {p.target_class}"],
+                [_field_label("prediction_status", styles), prediction_status],
+                [_field_label("target_score_type", styles), p.target_score_type],
+                [_field_label("method_name", styles), p.method_name],
+                [_field_label("mask_method", styles), MASK_METHOD],
+                [_field_label("mask_threshold", styles), f"{MASK_THRESHOLD:.2f}"],
+                [_field_label("brain_fraction", styles), f"{v.brain_fraction:.4f}"],
+                [_field_label("background_activation_fraction", styles), f"{v.background_activation_fraction:.4f}"],
+                [_field_label("foreground_mean", styles), f"{v.foreground_mean:.4f}"],
+                [_field_label("background_mean", styles), f"{v.background_mean:.4f}"],
+                [_field_label("foreground_background_ratio", styles), f"{v.foreground_background_ratio:.4f}"],
+                [_field_label("top5_background_fraction", styles), f"{v.top_activation_background_fraction:.4f}"],
+                [_field_label("max_location", styles), str(v.max_activation_xy)],
+                [_field_label("max_inside_brain", styles), str(v.max_activation_inside_brain)],
+                [_field_label("xai_qc_status", styles), v.qc_status],
+            ], colWidths=[48 * mm, 108 * mm])
+            qc_table.setStyle(table_style)
+            block.extend([
+                Paragraph("XAI provenance and spatial QC", styles["Heading2"]),
+                qc_table,
+                Paragraph(
+                    "This heatmap shows input regions contributing to the selected model score. It is not evidence of pathology, diagnosis, or causal anatomy.",
+                    styles["SmallKorean"],
+                ),
+                Spacer(1, 8),
+            ])
         story.append(KeepTogether(block))
     return story
 
 
 def _limitations(styles) -> list:
-    return [
+    block = [
         Paragraph("검증 성능 및 알려진 제한", styles["Heading2"]),
         Paragraph("검증 성능: Subject Accuracy 72.2%, Macro-F1 0.435", styles["BodyText"]),
         Paragraph(
@@ -575,6 +795,7 @@ def _limitations(styles) -> list:
             styles["SmallKorean"],
         ),
     ]
+    return [KeepTogether(block)]
 
 
 def _metadata_date(value: datetime) -> str:
@@ -599,6 +820,7 @@ def _rewrite_pdf_metadata(output_path: Path, payload: ReportPayload) -> None:
 
 
 def render_report_pdf(output_path: Path, payload: ReportPayload) -> Path:
+    _validate_report_artifacts(payload)
     styles, font_name, bold_name = _styles()
     table_style = _table_style(font_name, bold_name)
     doc = SimpleDocTemplate(
@@ -635,6 +857,7 @@ def render_report_pdf(output_path: Path, payload: ReportPayload) -> Path:
         _model_info_table(table_style),
         Spacer(1, 8),
     ]
+    story.extend(_artifact_summary_section(payload, styles, table_style))
 
     if payload.subject_prediction is None:
         story.extend(_single_slice_section(payload, styles, table_style))
@@ -652,7 +875,7 @@ def render_report_pdf(output_path: Path, payload: ReportPayload) -> Path:
 
     with TemporaryDirectory() as temp_dir_name:
         story.extend(_xai_sections(payload, styles, table_style, Path(temp_dir_name)))
-        story.extend([Spacer(1, 8), *_limitations(styles)])
+        story.extend([Spacer(1, 8), *_performance_section(styles), Spacer(1, 8), *_limitations(styles)])
         doc.build(story, onFirstPage=_footer(payload.report_id, font_name), onLaterPages=_footer(payload.report_id, font_name))
 
     _rewrite_pdf_metadata(output_path, payload)

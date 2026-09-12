@@ -11,10 +11,12 @@ from PIL import Image
 
 from src.config import AppConfig
 from src.inference import analyze_subject
+from src.model_registry import registry_rows
 from src.report import create_basic_pdf_report
 from src.visualization import heatmap_to_rgb, overlay_heatmap
 from src.warnings import RESEARCH_USE_WARNING, SINGLE_SLICE_WARNING, XAI_LIMITATION_TEXT
 from src.xai import generate_representative_xai
+from src.xai_artifacts import save_xai_artifact
 
 
 LOGGER = logging.getLogger("clip_xai_app")
@@ -30,7 +32,7 @@ def configure_logging(config: AppConfig) -> None:
     )
 
 
-def _load_uploaded_images(files) -> tuple[list[Image.Image], list[str]]:
+def _load_uploaded_images(files) -> tuple[list[Image.Image], list[str], list[Path]]:
     if not files:
         raise ValueError("Upload one or more coronal MRI PNG slices.")
 
@@ -41,7 +43,7 @@ def _load_uploaded_images(files) -> tuple[list[Image.Image], list[str]]:
     file_paths = sorted(file_paths, key=lambda path: path.name)
 
     images = [Image.open(path).convert("RGB") for path in file_paths]
-    return images, [path.name for path in file_paths]
+    return images, [path.name for path in file_paths], file_paths
 
 
 def _format_subject_markdown(mr_id: str, subject_prediction) -> str:
@@ -52,10 +54,25 @@ def _format_subject_markdown(mr_id: str, subject_prediction) -> str:
         f"### Subject Result\n"
         f"- MR_ID: `{mr_id}`\n"
         f"- Final prediction: **{subject_prediction.predicted_class}**\n"
-        f"- Confidence: **{subject_prediction.confidence:.4f}**\n"
+        f"- Model output probability: **{subject_prediction.confidence:.4f}**\n"
         f"- Slices used: `{subject_prediction.n_slices_used}`"
         f"{warning}"
     )
+
+
+def _artifact_markdown(artifacts) -> str:
+    if not artifacts:
+        return ""
+    lines = ["\n\n### XAI Artifact QC"]
+    for artifact in artifacts:
+        p = artifact.provenance
+        v = artifact.validation
+        status = "unknown" if p.prediction_correct is None else "correct" if p.prediction_correct else "incorrect"
+        lines.append(
+            f"- `{p.slice_filename}` | true={p.true_label or 'NA'} | pred={p.predicted_class} | "
+            f"target={p.target_class} | {status} | QC={v.qc_status} | analysis_id={p.analysis_id[:12]}"
+        )
+    return "\n".join(lines)
 
 
 def _probability_table(subject_prediction) -> pd.DataFrame:
@@ -71,7 +88,7 @@ def _slice_table(slice_names: list[str], slice_predictions) -> pd.DataFrame:
             "slice_index": index,
             "file": name,
             "predicted_class": slice_predictions.predicted_classes[index],
-            "confidence": float(slice_predictions.confidences[index]),
+            "model_output_probability": float(slice_predictions.confidences[index]),
         }
         for class_index, class_name in enumerate(slice_predictions.class_names):
             row[f"{class_name}_prob"] = float(slice_predictions.probs[index, class_index])
@@ -84,8 +101,9 @@ def analyze(files, mr_id: str):
     configure_logging(config)
 
     try:
-        images, slice_names = _load_uploaded_images(files)
+        images, slice_names, source_paths = _load_uploaded_images(files)
         resolved_mr_id = (mr_id or "").strip() or f"session_{uuid4().hex[:8]}"
+        run_id = f"ui-{uuid4().hex[:12]}"
 
         bundle, slice_predictions, subject_prediction, representative_indices = analyze_subject(
             images, device="cpu"
@@ -99,11 +117,47 @@ def analyze(files, mr_id: str):
 
         gallery_items = []
         report_images = []
+        xai_artifacts = []
         for index, xai_result in zip(representative_indices, xai_results):
             original = images[index].convert("RGB").resize((224, 224))
             heatmap = heatmap_to_rgb(xai_result.heatmap_224).convert("RGB")
             overlay = overlay_heatmap(images[index], xai_result.heatmap_224)
-            label = f"slice {index} | {slice_names[index]}"
+            slice_probs = {
+                class_name: float(slice_predictions.probs[index, class_index])
+                for class_index, class_name in enumerate(slice_predictions.class_names)
+            }
+            artifact = save_xai_artifact(
+                artifacts_root=config.artifacts_root,
+                repo_root=config.app_root.parent,
+                source_path=source_paths[index],
+                image=images[index],
+                heatmap=xai_result.heatmap_224,
+                xai_result=xai_result,
+                slice_probability_row=slice_probs,
+                subject_probabilities={name: float(value) for name, value in subject_prediction.probs.items()},
+                class_names=list(slice_predictions.class_names),
+                target_class_index=subject_prediction.predicted_class_idx,
+                bundle=bundle,
+                run_id=run_id,
+            )
+            xai_artifacts.append(artifact)
+            truth = artifact.provenance.true_label or "NA"
+            status = (
+                "unknown"
+                if artifact.provenance.prediction_correct is None
+                else "correct"
+                if artifact.provenance.prediction_correct
+                else "incorrect"
+            )
+            slice_label = (
+                f"cor{artifact.provenance.slice_index:03d}"
+                if artifact.provenance.slice_index >= 0
+                else f"slice {index}"
+            )
+            label = (
+                f"{slice_label} | true={truth} | pred={artifact.provenance.predicted_class} | "
+                f"target={artifact.provenance.target_class} | {status}"
+            )
             gallery_items.extend([
                 (original, f"{label} | original"),
                 (heatmap, f"{label} | heatmap"),
@@ -114,6 +168,7 @@ def analyze(files, mr_id: str):
                 "original": original,
                 "heatmap": heatmap,
                 "overlay": overlay,
+                "artifact": artifact,
             })
 
         report_path = create_basic_pdf_report(
@@ -127,7 +182,7 @@ def analyze(files, mr_id: str):
         )
 
         return (
-            _format_subject_markdown(resolved_mr_id, subject_prediction),
+            _format_subject_markdown(resolved_mr_id, subject_prediction) + _artifact_markdown(xai_artifacts),
             _probability_table(subject_prediction),
             _slice_table(slice_names, slice_predictions),
             gallery_items,
@@ -148,6 +203,11 @@ def build_app() -> gr.Blocks:
     with gr.Blocks(title="Alzheimer MRI XAI Decision Support Prototype") as demo:
         gr.Markdown("# Alzheimer MRI XAI Decision Support Prototype")
         gr.Markdown(f"**Research-use warning:** {RESEARCH_USE_WARNING}")
+        gr.Dataframe(
+            value=pd.DataFrame(registry_rows()),
+            label="Model availability",
+            interactive=False,
+        )
 
         with gr.Row():
             with gr.Column(scale=1):

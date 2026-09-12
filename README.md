@@ -31,33 +31,65 @@ CLIPtoXAI/
 │  ├─ metadata/
 │  ├─ models/
 │  └─ reports/
-└─ clip_xai_app/
-   ├─ app.py
+├─ clip_xai_app/
+│  ├─ app.py
+│  ├─ README.md
+│  ├─ requirements.txt
+│  ├─ configs/
+│  │  └─ explanation.yaml
+│  ├─ src/
+│  │  ├─ config.py
+│  │  ├─ model_loader.py
+│  │  ├─ inference.py
+│  │  ├─ xai.py
+│  │  ├─ visualization.py
+│  │  ├─ report.py
+│  │  ├─ schemas.py
+│  │  └─ warnings.py
+│  ├─ tests/
+│  │  ├─ test_model_contract.py
+│  │  ├─ test_inference_reference.py
+│  │  ├─ test_subject_aggregation.py
+│  │  ├─ test_xai_smoke.py
+│  │  └─ test_report_generation.py
+│  ├─ artifacts/
+│  │  ├─ verification/
+│  │  ├─ heatmaps/
+│  │  └─ reports/
+│  └─ handoff/
+└─ graph_xai_extension/
+   ├─ run_graph_xai.py         # standalone Gradio app (does not import/modify clip_xai_app)
    ├─ README.md
-   ├─ requirements.txt
-   ├─ configs/
-   │  └─ explanation.yaml
-   ├─ src/
-   │  ├─ config.py
-   │  ├─ model_loader.py
-   │  ├─ inference.py
-   │  ├─ xai.py
-   │  ├─ visualization.py
-   │  ├─ report.py
-   │  ├─ schemas.py
-   │  └─ warnings.py
+   ├─ graph_xai/                # region grid, masking, perturbation, ranking, Graph XAI, PDF report
    ├─ tests/
-   │  ├─ test_model_contract.py
-   │  ├─ test_inference_reference.py
-   │  ├─ test_subject_aggregation.py
-   │  ├─ test_xai_smoke.py
-   │  └─ test_report_generation.py
-   ├─ artifacts/
-   │  ├─ verification/
-   │  ├─ heatmaps/
-   │  └─ reports/
-   └─ handoff/
+   └─ docs/                     # implementation report, integrity baselines, integration guide
 ```
+
+## Graph XAI 확장 (`graph_xai_extension/`)
+
+`clip_xai_app`의 CLIP+LR 분류기와 Grad-ECLIP CAM을 **읽기 전용**으로 재사용해서 만든 독립 확장입니다. 원본 `clip_xai_app` 코드/모델/가중치는 전혀 수정하지 않으며, 자체 폴더 안에서만 동작합니다.
+
+주요 기능:
+
+- 3×3 공간 구역 분할 + zero/mean/blur 마스킹 기반 perturbation 분석 (구역이 모델 출력에 얼마나 민감한지 측정 — 해부학적 의미 아님)
+- 지지 근거(probability_drop > 0) / 억제 근거(< 0) / 절대 민감도(방향 무관) 3종 분리 순위
+- 마스킹 방식 간 안정성 지표(Spearman/Kendall, 부호 일치율)와 CAM-perturbation 탐색적 일치도
+- NetworkX/Plotly 기반 Graph XAI(구역 간 공간 인접성 그래프, 실제 신경 연결 아님)
+- CN/MCI/AD 클래스 순서를 분류기의 `classes_`에서 직접 검증(하드코딩 금지) + 다중 샘플 배치 평가(피험자 단위 중복 제거)
+- PDF 보고서 3종 모드: `clinical_summary`(의료진용 2~3쪽 요약), `technical_full`(연구자용 상세), `combined`(기본값, 요약 + 기술 부록), 연구 검토자 확인란 포함
+- CSV/JSON/HTML 내보내기, 독립 Gradio UI
+
+실행 명령:
+
+```powershell
+cd E:\Develop\CLIPtoXAI
+python -m pip install -r graph_xai_extension\requirements_graph_xai.txt
+python graph_xai_extension\run_graph_xai.py
+```
+
+자세한 구현 내역, 테스트 결과, 원본 파일 무결성 검증 기록은
+[graph_xai_extension/README.md](graph_xai_extension/README.md)와
+[graph_xai_extension/docs/IMPLEMENTATION_REPORT.md](graph_xai_extension/docs/IMPLEMENTATION_REPORT.md)를 참고하세요.
 
 ## 지금까지 구현한 것
 
