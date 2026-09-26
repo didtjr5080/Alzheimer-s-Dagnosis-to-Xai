@@ -339,7 +339,7 @@ cd clip_xai_app
 python -m pytest -q
 ```
 
-느린 전체 검증(573-scan 재현, ~7~8분)까지 포함:
+느린 전체 검증(573-scan 재현, 약 7-8분)까지 포함:
 
 ```powershell
 python -m pytest tests/test_merged_full_validation.py -v -m slow
@@ -413,7 +413,7 @@ python -m pip install -r clip_xai_app\requirements.txt
 - ~~테스트 파일에 실제 pytest 케이스 작성~~ — 2026-09-26 확인: 전체 테스트 파일(`tests/*.py`)에 스텁/placeholder 없이 실제 assertion이 있는 케이스만 존재함을 재확인(`pass`/`assert True`/`TODO`/`NotImplementedError` 패턴 grep 결과 0건).
 - ~~PDF 보고서 생성 로직의 단위 테스트 추가~~ — 2026-09-26: `tests/test_report_helpers.py` 신설. `src/report.py`의 순수 헬퍼(`infer_subject_id`, `validate_same_mr_id`, `classify_output_separation`, `_assert_probabilities_sum_to_one`, `_short_digest`, `_prediction_status_text`, `_artifact_slice_token`, `_merged_cell`/`_merged_branch_prob_table`/`_merged_kv_table`)를 대상으로 17개 단위 테스트 추가(기존에는 `create_basic_pdf_report`/`build_merged_full_pdf_report` 같은 최종 조립 함수를 통해서만 간접 검증됨).
 - ~~UI end-to-end 테스트 자동화~~ — 2026-09-26: `tests/test_ui_e2e.py` 신설. `app.py::build_app()`이 반환하는 실제 `gr.Blocks` 앱을 임시 포트로 실제 기동한 뒤 `gradio_client`로 실 HTTP 요청을 보내 `.click()` 배선·컴포넌트 직렬화까지 검증(scan_id 조회, 이미지 업로드, 잘못된 scan_id 처리 3케이스). 기존 테스트들은 `analyze_merged_scan` 등 내부 함수를 직접 호출해 UI 배선 자체는 검증하지 않았음.
-- ~~전체 `pytest -q` 통과 기준 정리~~ — 2026-09-26: `clip_xai_app/pytest.ini` 신설. (1) 이 프로젝트가 쓰지 않는 `pytest-qt` 플러그인이 이 저장소가 아닌 로컬 아나콘다 환경에 깔려 있어 `pytest -q` 실행 시 `INTERNALERROR`로 즉시 죽던 문제를 `addopts = -p no:pytest-qt`로 해결. (2) 느린 전체 검증(`test_merged_full_validation.py`, ~7~8분)에 `@pytest.mark.slow`를 붙이고 `addopts`에 `-m "not slow"`를 추가해 기본 실행에서 자동 제외(명시 실행은 `pytest tests/test_merged_full_validation.py -v -m slow`). (3) 이 개발 환경에서 ESTsoft 계열 도구로 추정되는 무언가가 `tempfile.tempdir`을 프로세스 전역으로 권한 없는 폴더(`.../ESTsoft/CreatorTemp`)로 덮어써 `tmp_path`를 쓰는 모든 테스트가 `PermissionError`로 죽던 문제를, 저장소 상대 경로(`--basetemp=.pytest_tmp`, `.gitignore` 등록)로 고정해 해결. 결과적으로 `clip_xai_app/`에서 별도 플래그 없이 `pytest -q`만 실행하면 통과함(확인: 62 passed, 4 deselected, ~80초).
+- ~~전체 `pytest -q` 통과 기준 정리~~ — 2026-09-26: `clip_xai_app/pytest.ini` 신설. (1) 이 프로젝트가 쓰지 않는 `pytest-qt` 플러그인이 이 저장소가 아닌 로컬 아나콘다 환경에 깔려 있어 `pytest -q` 실행 시 `INTERNALERROR`로 즉시 죽던 문제를 `addopts = -p no:pytest-qt`로 해결. (2) 느린 전체 검증(`test_merged_full_validation.py`, 약 7-8분)에 `@pytest.mark.slow`를 붙이고 `addopts`에 `-m "not slow"`를 추가해 기본 실행에서 자동 제외(명시 실행은 `pytest tests/test_merged_full_validation.py -v -m slow`). (3) 이 개발 환경에서 ESTsoft 계열 도구로 추정되는 무언가가 `tempfile.tempdir`을 프로세스 전역으로 권한 없는 폴더(`.../ESTsoft/CreatorTemp`)로 덮어써 `tmp_path`를 쓰는 모든 테스트가 `PermissionError`로 죽던 문제를, 저장소 상대 경로(`--basetemp=.pytest_tmp`, `.gitignore` 등록)로 고정해 해결. 결과적으로 `clip_xai_app/`에서 별도 플래그 없이 `pytest -q`만 실행하면 통과함(확인: 62 passed, 4 deselected, ~80초).
 
 여전히 별도 연구 과제로 남아 있는 항목:
 
