@@ -1,0 +1,1070 @@
+{
+  "root": "E:\\Develop\\CLIPtoXAI",
+  "target": "E:\\Develop\\CLIPtoXAI\\merged_project",
+  "part_file_counts": [
+    33283,
+    31826,
+    30316
+  ],
+  "expected_unique_files": 95425,
+  "actual_files": 95425,
+  "actual_total_bytes": 9627424468,
+  "extension_counts": {
+    ".csv": 8,
+    ".npy": 3816,
+    ".png": 91593,
+    ".pt": 4,
+    ".txt": 4
+  },
+  "missing_files": [],
+  "missing_count": 0,
+  "extra_files": [],
+  "extra_count": 0,
+  "size_mismatches": [],
+  "size_mismatch_count": 0,
+  "contains_adni_names": true,
+  "contains_oasis_names": true,
+  "important_files": {
+    "checkpoints/clip_best.pt": {
+      "exists": true,
+      "bytes": 7799,
+      "sha256": "a46f712af31ce980b17b3f07fcbd5d8cf736171aeb310d35766fd42476551b2f"
+    },
+    "checkpoints/clip_latest.pt": {
+      "exists": true,
+      "bytes": 23173,
+      "sha256": "e456e50fc069bbc8a6cbc6d4a40886b63839f0617832a808af59e1863769b438"
+    },
+    "checkpoints/3dcnn_best.pt": {
+      "exists": true,
+      "bytes": 3532533,
+      "sha256": "be297d587334c269045db5ce44670c525376c087ae3fc20116046e057cdadabe"
+    },
+    "checkpoints/3dcnn_latest.pt": {
+      "exists": true,
+      "bytes": 10607925,
+      "sha256": "df6b4eb68c26ea31f105fb9c6b05fa085255b407f3f2bddcbea9451e375a95c5"
+    },
+    "models/gbm_stage1.txt": {
+      "exists": true,
+      "bytes": 272544,
+      "sha256": "9ccf0cd3d348046a8ec8de1668b2211e77bb0b76cf974aa2edbc6424ec7ce321"
+    },
+    "models/gbm_stage2.txt": {
+      "exists": true,
+      "bytes": 222507,
+      "sha256": "5cf6202f267ec8b054032e9c3b13c7d45d16a8eb62791ac48bed1181f64f645c"
+    },
+    "models/gbm_baseline.txt": {
+      "exists": true,
+      "bytes": 879788,
+      "sha256": "dca567df0628878b9446127bd3eab75cabecc1055f15b89cb43b855ee474c584"
+    },
+    "gradcam_results/gradcam_summary.csv": {
+      "exists": true,
+      "bytes": 1504,
+      "sha256": "ca0e025c439876494443d51beca2d28a787a17e18f1e1148306cd9608c026bcc"
+    },
+    "clip_test_probs.csv": {
+      "exists": true,
+      "bytes": 49065,
+      "sha256": "be15b701af18aef70ccca095080d8efa5e6471df6eba34d63e91098d227e7cdb"
+    },
+    "3dcnn_test_probs.csv": {
+      "exists": true,
+      "bytes": 49327,
+      "sha256": "afd1d6b0b91ae7433fe526d3f264caa6d8c17481a1f1094be1c0d50f46dd8c21"
+    },
+    "gbm_hierarchical_test_probs.csv": {
+      "exists": true,
+      "bytes": 49196,
+      "sha256": "ee4c0c5c220cf1567d73f15249e738b3694c532c56e6bd96f065852ff71173b2"
+    },
+    "final_ensemble_results.csv": {
+      "exists": true,
+      "bytes": 117452,
+      "sha256": "5a1ab844ebcb5fd61a33cb4feb3e046527eafd0fe23292512daff6b97f6d6956"
+    },
+    "unified_manifest.csv": {
+      "exists": true,
+      "bytes": 571173,
+      "sha256": "0d9a41c2079f7316826c03816c47db99deee48ecf6b17195c73603cd8d83b09e"
+    },
+    "unified_slice_manifest.csv": {
+      "exists": true,
+      "bytes": 10616386,
+      "sha256": "41521f0dfa90e3a99e66a8bedd051ceff37a394fdd5e6b2a26ae44297aa2ba58"
+    },
+    "unified_final_features_gbm.csv": {
+      "exists": true,
+      "bytes": 1144183,
+      "sha256": "5974952d2af0871c56b9b439d6f2d6197ba16252a480f7cad6187c928858fc53"
+    },
+    "task_A_column_summary.txt": {
+      "exists": true,
+      "bytes": 607,
+      "sha256": "1f6665f42092b626ae49d68f1f21ce4d7ff9376ac3dc8a1030f2737c6df8bd55"
+    }
+  },
+  "csv_results": [
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\gradcam_results\\gradcam_summary.csv",
+      "exists": true,
+      "bytes": 1504,
+      "ok": true,
+      "rows": 9,
+      "columns": 8,
+      "duplicate_columns": [],
+      "header": [
+        "scan_id",
+        "true_label",
+        "pred_label",
+        "status",
+        "prob_CN",
+        "prob_MCI",
+        "prob_AD",
+        "image_path"
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\clip_test_probs.csv",
+      "exists": true,
+      "bytes": 49065,
+      "ok": true,
+      "rows": 573,
+      "columns": 6,
+      "duplicate_columns": [],
+      "header": [
+        "scan_id",
+        "clip_CN",
+        "clip_MCI",
+        "clip_AD",
+        "label",
+        "dataset_source"
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\3dcnn_test_probs.csv",
+      "exists": true,
+      "bytes": 49327,
+      "ok": true,
+      "rows": 573,
+      "columns": 6,
+      "duplicate_columns": [],
+      "header": [
+        "prob_CN",
+        "prob_MCI",
+        "prob_AD",
+        "scan_id",
+        "dataset_source",
+        "true_label"
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\gbm_hierarchical_test_probs.csv",
+      "exists": true,
+      "bytes": 49196,
+      "ok": true,
+      "rows": 573,
+      "columns": 6,
+      "duplicate_columns": [],
+      "header": [
+        "gbm_CN",
+        "gbm_MCI",
+        "gbm_AD",
+        "scan_id",
+        "true_label",
+        "dataset_source"
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\final_ensemble_results.csv",
+      "exists": true,
+      "bytes": 117452,
+      "ok": true,
+      "rows": 573,
+      "columns": 14,
+      "duplicate_columns": [],
+      "header": [
+        "gbm_CN",
+        "gbm_MCI",
+        "gbm_AD",
+        "scan_id",
+        "true_label",
+        "dataset_source",
+        "cnn_CN",
+        "cnn_MCI",
+        "cnn_AD",
+        "clip_CN",
+        "clip_MCI",
+        "clip_AD",
+        "label_idx",
+        "pred"
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\unified_manifest.csv",
+      "exists": true,
+      "bytes": 571173,
+      "ok": true,
+      "rows": 3816,
+      "columns": 8,
+      "duplicate_columns": [],
+      "header": [
+        "subject_id",
+        "scan_id",
+        "label",
+        "age",
+        "sex",
+        "split",
+        "dataset_source",
+        "mni_path"
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\unified_slice_manifest.csv",
+      "exists": true,
+      "bytes": 10616386,
+      "ok": true,
+      "rows": 91584,
+      "columns": 6,
+      "duplicate_columns": [],
+      "header": [
+        "scan_id",
+        "slice_index",
+        "slice_path",
+        "label",
+        "split",
+        "dataset_source"
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\unified_final_features_gbm.csv",
+      "exists": true,
+      "bytes": 1144183,
+      "ok": true,
+      "rows": 3816,
+      "columns": 23,
+      "duplicate_columns": [],
+      "header": [
+        "scan_id",
+        "ICV_mm3",
+        "Hippocampus_total",
+        "Amygdala_total",
+        "LateralVentricle_total",
+        "InfLatVent_total",
+        "Entorhinal_total",
+        "Thalamus_total",
+        "Accumbens_total",
+        "BrainStem_total",
+        "Hippocampus_ratio",
+        "Amygdala_ratio",
+        "LateralVentricle_ratio",
+        "InfLatVent_ratio",
+        "Entorhinal_ratio",
+        "Thalamus_ratio",
+        "Accumbens_ratio",
+        "BrainStem_ratio",
+        "label",
+        "split",
+        "AgeatEntry",
+        "GENDER",
+        "dataset_source"
+      ]
+    }
+  ],
+  "checkpoint_results": [
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\checkpoints\\clip_best.pt",
+      "exists": true,
+      "bytes": 7799,
+      "sha256": "a46f712af31ce980b17b3f07fcbd5d8cf736171aeb310d35766fd42476551b2f",
+      "ok": true,
+      "load_mode": "weights_only=True",
+      "object_type": "dict",
+      "top_keys": [
+        "epoch",
+        "class_embeds"
+      ],
+      "tensor_samples": [
+        {
+          "key": "class_embeds",
+          "shape": [
+            3,
+            512
+          ],
+          "dtype": "torch.float32"
+        }
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\checkpoints\\clip_latest.pt",
+      "exists": true,
+      "bytes": 23173,
+      "sha256": "e456e50fc069bbc8a6cbc6d4a40886b63839f0617832a808af59e1863769b438",
+      "ok": true,
+      "load_mode": "weights_only=True",
+      "object_type": "dict",
+      "top_keys": [
+        "epoch",
+        "class_embeds",
+        "optimizer_state",
+        "best_val_f1",
+        "history"
+      ],
+      "tensor_samples": [
+        {
+          "key": "class_embeds",
+          "shape": [
+            3,
+            512
+          ],
+          "dtype": "torch.float32"
+        }
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\checkpoints\\3dcnn_best.pt",
+      "exists": true,
+      "bytes": 3532533,
+      "sha256": "be297d587334c269045db5ce44670c525376c087ae3fc20116046e057cdadabe",
+      "ok": true,
+      "load_mode": "weights_only=True",
+      "object_type": "dict",
+      "top_keys": [
+        "epoch",
+        "model_state"
+      ],
+      "tensor_samples": [
+        {
+          "key": "block1.0.weight",
+          "shape": [
+            16,
+            1,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.0.bias",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.1.weight",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.1.bias",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.3.weight",
+          "shape": [
+            16,
+            16,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.3.bias",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.4.weight",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.4.bias",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.0.weight",
+          "shape": [
+            32,
+            16,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.0.bias",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.1.weight",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.1.bias",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.3.weight",
+          "shape": [
+            32,
+            32,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.3.bias",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.4.weight",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.4.bias",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.0.weight",
+          "shape": [
+            64,
+            32,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.0.bias",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.1.weight",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.1.bias",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.3.weight",
+          "shape": [
+            64,
+            64,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.3.bias",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.4.weight",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.4.bias",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block4.0.weight",
+          "shape": [
+            128,
+            64,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      ]
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\checkpoints\\3dcnn_latest.pt",
+      "exists": true,
+      "bytes": 10607925,
+      "sha256": "df6b4eb68c26ea31f105fb9c6b05fa085255b407f3f2bddcbea9451e375a95c5",
+      "ok": true,
+      "load_mode": "weights_only=True",
+      "object_type": "dict",
+      "top_keys": [
+        "epoch",
+        "model_state",
+        "optimizer_state",
+        "scheduler_state",
+        "best_val_f1",
+        "history"
+      ],
+      "tensor_samples": [
+        {
+          "key": "block1.0.weight",
+          "shape": [
+            16,
+            1,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.0.bias",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.1.weight",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.1.bias",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.3.weight",
+          "shape": [
+            16,
+            16,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.3.bias",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.4.weight",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block1.4.bias",
+          "shape": [
+            16
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.0.weight",
+          "shape": [
+            32,
+            16,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.0.bias",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.1.weight",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.1.bias",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.3.weight",
+          "shape": [
+            32,
+            32,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.3.bias",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.4.weight",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block2.4.bias",
+          "shape": [
+            32
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.0.weight",
+          "shape": [
+            64,
+            32,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.0.bias",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.1.weight",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.1.bias",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.3.weight",
+          "shape": [
+            64,
+            64,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.3.bias",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.4.weight",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block3.4.bias",
+          "shape": [
+            64
+          ],
+          "dtype": "torch.float32"
+        },
+        {
+          "key": "block4.0.weight",
+          "shape": [
+            128,
+            64,
+            3,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      ]
+    }
+  ],
+  "npy_count": 3816,
+  "npy_samples": [
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\OAS30701_MR_d2371.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\029_S_4327_358270.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\OAS30761_MR_d0099.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\009_S_1199_52835.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\128_S_0770_153755.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\067_S_7020_1507787.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\013_S_1276_201503.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\013_S_4616_443078.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\012_S_5121_498004.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\OAS30906_MR_d0035.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\012_S_4094_1267860.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\mri_3d_cache\\135_S_6622_1251628.npy",
+      "bytes": 2137312,
+      "ok": true,
+      "shape": [
+        98,
+        116,
+        94
+      ],
+      "dtype": "float16",
+      "has_nan": false,
+      "has_inf": false,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "slices_multi_png": {
+    "count": 91584,
+    "min_bytes": 4351,
+    "median_bytes": 15862,
+    "max_bytes": 17834
+  },
+  "gradcam_png": {
+    "count": 9,
+    "min_bytes": 73261,
+    "median_bytes": 77159,
+    "max_bytes": 86960
+  },
+  "gradcam_summary_refs": {
+    "checked": true,
+    "summary": {
+      "path": "E:\\Develop\\CLIPtoXAI\\merged_project\\gradcam_results\\gradcam_summary.csv",
+      "exists": true,
+      "bytes": 1504,
+      "ok": true,
+      "rows": 9,
+      "columns": 8,
+      "duplicate_columns": [],
+      "header": [
+        "scan_id",
+        "true_label",
+        "pred_label",
+        "status",
+        "prob_CN",
+        "prob_MCI",
+        "prob_AD",
+        "image_path"
+      ]
+    },
+    "png_names_referenced": 9
+  },
+  "code_and_dependency_files": {
+    "readmes": [
+      "E:\\Develop\\CLIPtoXAI\\README.md",
+      "E:\\Develop\\CLIPtoXAI\\.pytest_cache\\README.md",
+      "E:\\Develop\\CLIPtoXAI\\clip_lr_grad_eclip_handoff_v1_20260812_105027\\README.md",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\README.md",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\README.md",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\.pytest_cache\\README.md"
+    ],
+    "requirements": [
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\requirements.txt",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\requirements_graph_xai.txt"
+    ],
+    "python_code_hits": [
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\app.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\run_graph_xai.py",
+      "E:\\Develop\\CLIPtoXAI\\scripts\\inspect_merged_parts_fast.py",
+      "E:\\Develop\\CLIPtoXAI\\scripts\\validate_merged_project.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_lr_grad_eclip_handoff_v1_20260812_105027\\code\\gradient_smoke_test.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_lr_grad_eclip_handoff_v1_20260812_105027\\code\\grad_eclip.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_lr_grad_eclip_handoff_v1_20260812_105027\\code\\inference_clip_lr.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_lr_grad_eclip_handoff_v1_20260812_105027\\code\\verify_handoff.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\config.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\contracts.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\inference.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\merged_artifacts.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\model_loader.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\model_registry.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\report.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\schemas.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\xai.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\xai_artifacts.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\xai_methods.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\__init__.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_ensemble_contract.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_heatmap_qc.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_inference_reference.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_merged_artifact_contract.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_model_contract.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_report_generation.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_subject_aggregation.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_xai_artifact_identity.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_xai_report_preflight.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\tests\\test_xai_smoke.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\adapters\\base.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\adapters\\legacy_clip_lr.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\adapters\\merged_reference.py",
+      "E:\\Develop\\CLIPtoXAI\\clip_xai_app\\src\\adapters\\__init__.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\batch.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\cam_adapter.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\cam_visuals.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\clinical_wording.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\exporter.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\legacy_adapter.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\masking.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\masking_compare.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\model_adapter.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\pdf_report.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\perturbation.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\ranking.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\region_grid.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\schemas.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\visualization.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\graph_xai\\__init__.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\scripts\\_qc_generate_pdfs.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\conftest.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_agreement.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_batch.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_class_mapping.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_clinical_wording.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_graph_builder.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_integration.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_masking.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_masking_compare.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_pdf_report.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_pdf_report_modes.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_pdf_report_real_model_smoke.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_perturbation.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_ranking.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_run_metadata.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\test_stability.py",
+      "E:\\Develop\\CLIPtoXAI\\graph_xai_extension\\tests\\_mock_model.py"
+    ]
+  },
+  "errors": []
+}

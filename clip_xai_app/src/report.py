@@ -28,6 +28,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from .warnings import RESEARCH_USE_WARNING
 from .xai_artifacts import (
     MASK_METHOD,
     MASK_THRESHOLD,
@@ -319,6 +320,19 @@ def _styles():
         fontName=font_name,
         fontSize=8,
         leading=10,
+    ))
+    # Clinical (medical-staff-facing) styles for the merged full report --
+    # >=10.5pt body / >=16pt key numbers, matching graph_xai_extension's
+    # clinical_summary layout convention.
+    styles.add(ParagraphStyle(name="ClinicalTitle", parent=styles["Title"], fontName=bold_name, fontSize=19, leading=23))
+    styles.add(ParagraphStyle(name="ClinicalHeading", parent=styles["Heading1"], fontName=bold_name, fontSize=13.5, leading=17))
+    styles.add(ParagraphStyle(name="ClinicalLabel", parent=styles["BodyText"], fontName=bold_name, fontSize=11, leading=14))
+    styles.add(ParagraphStyle(name="ClinicalValue", parent=styles["BodyText"], fontName=bold_name, fontSize=15, leading=18))
+    styles.add(ParagraphStyle(name="ClinicalBody", parent=styles["BodyText"], fontName=font_name, fontSize=11, leading=15))
+    styles.add(ParagraphStyle(name="ClinicalSmall", parent=styles["BodyText"], fontName=font_name, fontSize=10.5, leading=13.5))
+    styles.add(ParagraphStyle(
+        name="ClinicalWarning", parent=styles["BodyText"], fontName=bold_name, fontSize=11, leading=15,
+        textColor=colors.HexColor("#8a1f11"),
     ))
     return styles, font_name, bold_name
 
@@ -880,6 +894,36 @@ def render_report_pdf(output_path: Path, payload: ReportPayload) -> Path:
 
     _rewrite_pdf_metadata(output_path, payload)
     return output_path
+
+
+def _merged_cell(text, styles, style_name: str = "SmallKorean") -> Paragraph:
+    """Wraps table cell text in a Paragraph so reportlab wraps it within the
+    column width instead of overflowing past the page margin (plain strings
+    in a Table do not reliably wrap -- see `_field_label` above for the same
+    issue in the legacy report)."""
+    return Paragraph(str(text), styles[style_name])
+
+
+def _merged_branch_prob_table(branch_probs: dict, table_style: TableStyle, styles) -> Table:
+    header = ["브랜치", "CN", "MCI", "AD", "예측 클래스"]
+    rows = [[_merged_cell(h, styles) for h in header]]
+    for branch, probs in branch_probs.items():
+        if probs is None:
+            rows.append([_merged_cell(c, styles) for c in (branch, "-", "-", "-", "사용 불가")])
+            continue
+        predicted = max(probs, key=probs.get)
+        rows.append([_merged_cell(c, styles) for c in (
+            branch, f"{probs['CN']:.4f}", f"{probs['MCI']:.4f}", f"{probs['AD']:.4f}", predicted,
+        )])
+    table = Table(rows, colWidths=[36 * mm, 26 * mm, 26 * mm, 26 * mm, 30 * mm])
+    table.setStyle(table_style)
+    return table
+
+
+def _merged_kv_table(rows: list[list[str]], col_widths: list, table_style: TableStyle, styles) -> Table:
+    table = Table([[_merged_cell(c, styles) for c in row] for row in rows], colWidths=col_widths)
+    table.setStyle(table_style)
+    return table
 
 
 def create_basic_pdf_report(

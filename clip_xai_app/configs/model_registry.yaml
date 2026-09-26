@@ -8,38 +8,41 @@ models:
     class_order_source: clf.classes_ plus metadata/model_config.json
     xai_method: LR class logit based CLIP ViT gradient heatmap
 
-  - model_id: merged_clip_reference
-    status: AVAILABLE
-    execution_mode: reference_csv_by_scan_id
-    source: merged_project/clip_test_probs.csv
-    class_order: [CN, MCI, AD]
-    dynamic_inference_status: BLOCKED_MODEL_CONTRACT
-    block_reason: clip_best.pt stores class_embeds only; CLIP backbone and preprocessing linkage are not present.
+  # --- Merged (OASIS-3+ADNI) live-inference branches -------------------
+  # Converted from reference-CSV-only lookup to live inference by
+  # `통합(OASIS-3+ADNI) 모델 라이브 추론 전환 작업지시서.md`. Test-set (n=573)
+  # reproduction was validated in this session against every criterion in
+  # that work order (probabilities, argmax, Acc/Macro-F1, confusion
+  # matrices, per-dataset-source breakdowns). Full evidence:
+  # WorkOrder/통합모델_라이브추론_보고서_*.md.
 
-  - model_id: merged_clip_checkpoint
-    status: BLOCKED_MODEL_CONTRACT
+  - model_id: merged_clip
+    status: AVAILABLE
+    execution_mode: live_inference_by_scan_id
     source: merged_project/checkpoints/clip_best.pt
-    block_reason: checkpoint contains class_embeds and epoch but not a complete CLIP image encoder contract.
-
-  - model_id: cnn3d_reference
-    status: AVAILABLE
-    execution_mode: reference_csv_by_scan_id
-    source: merged_project/3dcnn_test_probs.csv
+    backbone: openai/clip-vit-base-patch16 (frozen, reused from the OASIS-3-only handoff, commit 57c216476eefef5ab752ec549e440a49ae4ae5f3)
+    head: L2-normalized image embedding vs L2-normalized per-class class_embeds (3, 512), scaled by logit_scale.exp()
     class_order: [CN, MCI, AD]
-    dynamic_inference_status: BLOCKED_MODEL_CONTRACT
-    block_reason: checkpoint state_dict is readable, but the model class and preprocessing contract are absent.
+    input: merged_project/slices_multi/{scan_id}_cor{idx:03d}.png, subject-level mean of slice softmax probabilities
+    xai_method: 통합 CLIP class-embedding 유사도 기반 gradient heatmap (Grad-ECLIP hook location, gradient-only, reused from grad_eclip.py)
+    validated_test_metrics: {n: 573, accuracy: 0.609, macro_f1: 0.576}
 
-  - model_id: cnn3d_checkpoint
-    status: BLOCKED_MODEL_CONTRACT
+  - model_id: merged_cnn3d
+    status: AVAILABLE
+    execution_mode: live_inference_by_scan_id
     source: merged_project/checkpoints/3dcnn_best.pt
-    block_reason: model architecture code and training preprocessing are required before live 3D CNN inference or Grad-CAM.
-
-  - model_id: gbm_reference
-    status: AVAILABLE
-    execution_mode: reference_csv_by_scan_id
-    source: merged_project/gbm_hierarchical_test_probs.csv
+    architecture: Simple3DCNN_Stable (4-block Conv3D+GroupNorm+ReLU+MaxPool, notebook cell 39, loaded strict)
     class_order: [CN, MCI, AD]
-    dynamic_inference_status: BLOCKED_PREPROCESSING_CONTRACT
+    input: merged_project/mri_3d_cache/{scan_id}.npy, float16 (98, 116, 94), cast to float32, no further normalization
+    xai_method: 통합 3D CNN block4 활성화 기반 Grad-CAM, upsampled to the cache volume's own resolution (never original scan resolution)
+    validated_test_metrics: {n: 573, accuracy: 0.649, macro_f1: 0.622}
+
+  - model_id: merged_gbm_baseline
+    status: AVAILABLE
+    execution_mode: live_inference_by_scan_id
+    source: merged_project/models/gbm_baseline.txt
+    algorithm: LightGBM Booster (num_model_per_iteration=3, num_trees=600)
+    class_order: [CN, MCI, AD]
     feature_order:
       - Hippocampus_ratio
       - Amygdala_ratio
@@ -52,9 +55,48 @@ models:
       - AgeatEntry
       - GENDER
       - is_adni
-    block_reason: live GBM inference requires explicit is_adni construction and missing-value policy.
+    feature_source: merged_project/unified_final_features_gbm.csv (is_adni derived from dataset_source == "ADNI"; not a stored column)
+    missing_value_policy: none (matches the original notebook; 0 missing values found among the required columns for every split)
+    unavailable_when: scan_id not present in unified_final_features_gbm.csv (no SynthSeg volume features)
+    validated_test_metrics: {n: 573, accuracy: 0.632, macro_f1: 0.604}
 
-  - model_id: ensemble_reference
-    status: BLOCKED_MODEL_CONTRACT
-    source: merged_project/final_ensemble_results.csv
-    block_reason: final pred is present, but final ensemble probability columns and exact combining rule are not recoverable.
+  - model_id: merged_ensemble
+    status: AVAILABLE
+    execution_mode: live_inference_by_scan_id
+    combining_rule: "fixed weighted sum: gbm*0.35 + cnn*0.45 + clip*0.20 (no renormalization)"
+    branches: [merged_gbm_baseline, merged_cnn3d, merged_clip]
+    unavailable_when: any one branch is unavailable for the scan_id (remaining branches are never re-weighted)
+    validated_test_metrics:
+      n: 573
+      accuracy: 0.656
+      macro_f1: 0.634
+      predicted_class_matches_final_ensemble_results_csv: 573/573
+
+  # --- Superseded / no longer blocked -----------------------------------
+  # merged_clip_checkpoint and cnn3d_checkpoint (previously BLOCKED_MODEL_CONTRACT)
+  # are now covered by merged_clip / merged_cnn3d above.
+  # ensemble_reference (previously BLOCKED_MODEL_CONTRACT, "combining rule not
+  # recoverable") is superseded by merged_ensemble: the rule was a fixed
+  # weighted sum using the *baseline* GBM (not hierarchical), not an
+  # unrecoverable one.
+
+  - model_id: gbm_hierarchical_reference
+    status: AVAILABLE
+    execution_mode: reference_csv_by_scan_id
+    source: merged_project/gbm_hierarchical_test_probs.csv
+    class_order: [CN, MCI, AD]
+    note: Not used by merged_ensemble (which uses gbm_baseline, not the hierarchical stage1/stage2 model). Kept for reference lookup only.
+
+  - model_id: merged_clip_reference
+    status: AVAILABLE
+    execution_mode: reference_csv_by_scan_id
+    source: merged_project/clip_test_probs.csv
+    class_order: [CN, MCI, AD]
+    note: Precomputed test-set CSV lookup, retained alongside the live merged_clip adapter for cross-checking (max abs error 1e-6 in this session's validation).
+
+  - model_id: cnn3d_reference
+    status: AVAILABLE
+    execution_mode: reference_csv_by_scan_id
+    source: merged_project/3dcnn_test_probs.csv
+    class_order: [CN, MCI, AD]
+    note: Precomputed test-set CSV lookup, retained alongside the live merged_cnn3d adapter for cross-checking (max abs error 1.8e-7 in this session's validation).

@@ -1,6 +1,7 @@
 gradio
 fastapi>=0.115.2,<1.0
 joblib
+lightgbm
 matplotlib
 numpy
 pandas

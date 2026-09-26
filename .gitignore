@@ -24,3 +24,13 @@ clip_lr_grad_eclip_handoff_v1_20260812_105027/data/xai_samples/images/
 
 # Graph XAI extension: generated per-run reports/exports and its test cache.
 graph_xai_extension/outputs/
+
+# merged_project (OASIS-3+ADNI) is a large local data/checkpoint payload
+# (~9.6GB), not source; the split download parts are redundant once merged
+# (see WorkOrder/통합모델_라이브추론_보고서_*.md).
+merged_project/
+merged_project-20260825T072246Z-1-*/
+
+# Team-sharing export of the merged model's weight files only (small, but
+# still a binary model payload -- shared out-of-band, not a source artifact).
+merged_model_release/
