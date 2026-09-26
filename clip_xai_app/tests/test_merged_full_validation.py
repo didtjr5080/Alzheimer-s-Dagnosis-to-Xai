@@ -2,13 +2,14 @@
 criterion in `통합(OASIS-3+ADNI) 모델 라이브 추론 전환 작업지시서.md` sections
 1-5, 2, 3-4, and 4-1. This is slow (~7-8 minutes, dominated by the CLIP
 branch's 13,752-slice GPU forward pass) and is excluded from routine runs
-the same way graph_xai_extension excludes its real-model batch test:
+by pytest.ini's `addopts = -m "not slow"` (same intent as
+graph_xai_extension excluding its real-model batch test):
 
-    pytest -k "not merged_full_validation"
+    pytest -q                    # excludes this file (default addopts)
 
 Run explicitly to re-verify the work order's exact pass/fail numbers:
 
-    pytest tests/test_merged_full_validation.py -v
+    pytest tests/test_merged_full_validation.py -v -m slow
 """
 from __future__ import annotations
 
@@ -29,7 +30,10 @@ sys.path.insert(0, str(APP_ROOT))
 MERGED_ROOT = REPO_ROOT / "merged_project"
 _merged_available = (MERGED_ROOT / "unified_manifest.csv").exists()
 
-pytestmark = pytest.mark.skipif(not _merged_available, reason="merged_project/ not available locally")
+pytestmark = [
+    pytest.mark.skipif(not _merged_available, reason="merged_project/ not available locally"),
+    pytest.mark.slow,
+]
 
 CLASS_NAMES = ["CN", "MCI", "AD"]
 

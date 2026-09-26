@@ -150,7 +150,8 @@ powershell -ExecutionPolicy Bypass -File scripts\merge_merged_parts.ps1
 
 - **2026-09-26**: `clip_xai_app` 통합 모델 탭의 PDF 보고서를 `graph_xai_extension`과 같은 구조(의료진용 3쪽 요약 + 연구자용 기술 부록)로 전면 교체하되, CLIP(3×3=9구역)과 3D CNN(3×3×3=27구역) 두 공간 브랜치 모두에 3x3 구역 마스킹(zero/mean/blur) 기반 CAM 민감도 분석을 적용하도록 확장(`graph_xai_extension`을 임포트하지 않는 독립 재구현, `src/region_xai/`). 지지/억제/절대 민감도 순위, 마스킹 방식 간 안정성, CAM-Perturbation 일치도, Graph XAI 네트워크(CLIP은 9노드 단일 그래프, 3D CNN은 27노드를 axis0 3개 층으로 나눈 소형 다중 패널)를 두 브랜치 각각에 대해 생성. 배경(뇌 밖) 마스킹을 CLIP 히트맵에도 적용(측정 결과 scan에 따라 배경에 투사되던 heat가 최대 96.4%에 달함을 확인). PyMuPDF로 12쪽 전 페이지 육안 검수를 거쳐 표 헤더 겹침 버그를 발견·수정. `src/report.py::create_merged_pdf_report`(구버전, 3쪽 요약뿐)는 미사용 코드로 삭제.
 - **2026-09-26 (같은 날 후속)**: 통합 모델 탭에 scan_id 조회 외에 이미지 직접 업로드 분석을 추가(`merged_inference.py::analyze_merged_uploaded_image`). 업로드된 이미지는 3D CNN(MNI 정합 3D 볼륨 필요)과 GBM baseline(SynthSeg 구조적 부피비 필요) 입력을 만들 수 없으므로 CLIP 브랜치만 실행하고, 앙상블은 계산하지 않음(부재 브랜치를 재가중치로 메우지 않는 기존 규칙 유지). `merged_pdf_report.py`의 모든 섹션 빌더가 `cnn3d_analysis`/`cnn3d_volume`/`cnn3d_cam_volume`가 `None`인 경우를 안전하게 처리하도록 수정(3D CNN 관련 카드/이미지/순위/마스킹비교/안정성/일치도/그래프 절만 조건부로 생략, CLIP 절은 그대로 출력). PyMuPDF로 CLIP 전용 업로드 경로의 8쪽 보고서 전체를 육안 검수하여 정상 렌더링 확인. `app.py::analyze_merged_ui`의 갤러리 라벨이 업로드 이미지의 `rep_slice_index=None`을 `:03d` 형식으로 포맷하려다 `unsupported format string passed to NoneType` 예외로 죽던 버그를 발견·수정("CLIP 입력 이미지 (업로드됨)" 라벨로 분기 처리); 실제 `analyze_merged_ui`를 업로드 시나리오로 직접 실행해 에러 없이 상태/표/갤러리/PDF가 모두 생성됨을 확인.
-- **2026-09-26 (같은 날 후속 2)**: `merged_project/`(체크포인트 포함 전체 ~9.6GB)는 git 대상이 아니라 팀원이 저장소만 clone해서는 통합 모델을 실행할 수 없으므로, 라이브 추론에 실제로 쓰이는 가중치 3개(`clip_best.pt`, `3dcnn_best.pt`, `gbm_baseline.txt`, 총 ~4.3MB)만 `merged_model_release/merged_model_files_20260926.zip`으로 압축해 배치 안내 README와 함께 별도 보관(팀원 공유용, git에는 포함하지 않음 — `.gitignore`에 `merged_model_release/` 추가). GBM/3D CNN의 scan_id 조회 기능은 이 3개 파일 외에 `unified_final_features_gbm.csv` 등 데이터 파일이 추가로 필요하지만, 이미지 업로드(CLIP 전용) 분석은 `clip_best.pt`만으로 동작한다.
+- **2026-09-26 (같은 날 후속 2)**: `merged_project/`(체크포인트 포함 전체 ~9.6GB)는 git 대상이 아니라 팀원이 저장소만 clone해서는 통합 모델을 실행할 수 없으므로, 라이브 추론에 실제로 쓰이는 가중치 3개(`clip_best.pt`, `3dcnn_best.pt`, `gbm_baseline.txt`, 총 ~4.3MB)만 `merged_model_release/merged_model_files_20260926.zip`으로 압축해 배치 안내 README와 함께 별도 보관(팀원 공유용, git에는 포함하지 않음 — `.gitignore`에 `merged_model_release/` 추가). GBM/3D CNN의 scan_id 조회 기능은 이 3개 파일 외에 `unified_final_features_gbm.csv` 등 데이터 파일이 추가로 필요하지만, 이미지 업로드(CLIP 전용) 분석은 `clip_best.pt`만으로 동작한다. 그동안 커밋되지 않고 쌓여 있던 `WorkOrder/`, `scripts/`, 최상위 `artifacts/`(병합 검증 증거)와 이번 세션의 모든 `clip_xai_app` 변경사항을 함께 커밋·푸시(`b24c994`).
+- **2026-09-26 (같은 날 후속 3)**: 부록 "남은 작업" 목록 중 테스트 관련 4개 항목을 정리. (1) `tests/test_report_helpers.py` 신설 — `src/report.py`의 PDF 조립용 순수 헬퍼 함수(구독자ID 파싱, 불확실성 등급 분류, 확률 합 검증, `_merged_*` 표 헬퍼 등) 17개 단위 테스트 추가. (2) `tests/test_ui_e2e.py` 신설 — `app.py::build_app()`의 실제 `gr.Blocks` 앱을 임시 포트로 기동해 `gradio_client`로 진짜 HTTP 요청을 보내는 3개 테스트(scan_id 분석, 이미지 업로드 분석, 잘못된 scan_id 처리) 추가, 기존 테스트들이 검증하지 않던 `.click()` 배선과 직렬화 경계까지 확인. (3) `clip_xai_app/pytest.ini` 신설 — 이 프로젝트가 쓰지 않는 `pytest-qt` 플러그인이 로컬 아나콘다 환경에 설치돼 있어 `pytest -q`가 즉시 `INTERNALERROR`로 죽던 문제, 그리고 로컬 환경에서 `tempfile.tempdir`이 권한 없는 폴더로 전역 오버라이드되어 `tmp_path`를 쓰는 모든 테스트가 `PermissionError`로 죽던 문제를 각각 `addopts`의 `-p no:pytest-qt`와 `--basetemp=.pytest_tmp`로 해결하고, 느린 전체 검증 테스트(`test_merged_full_validation.py`)에 `@pytest.mark.slow`를 붙여 기본 실행에서 제외되도록 정리. 결과적으로 `clip_xai_app/`에서 플래그 없이 `pytest -q`만 실행하면 62 passed, 4 deselected(약 80초)로 통과. (4) 테스트 파일에 실제 pytest 케이스가 없다는 항목은 재확인 결과 이미 해소된 상태였음(스텁/placeholder 0건).
 - **2026-09-23 (2)**: `통합(OASIS-3+ADNI) 모델 라이브 추론 전환 작업지시서.md`에 따라 `merged_project`의 CLIP/3D CNN/GBM baseline을 저장된 가중치에서 직접 로드하는 라이브 추론으로 전환(재학습 없음). 세 브랜치 + 고정 가중 앙상블 모두 test-set(n=573) 재현 검증에서 지시서의 모든 기준값(확률/argmax/Acc/Macro-F1/혼동행렬/소스별 분해)과 완전히 일치. CLIP class-embedding 및 3D CNN용 Grad-CAM XAI 추가. `clip_xai_app` UI를 통합 모델(기본)/legacy 두 탭으로 재구성. 통합 CLIP 백본이 `openai/clip-vit-base-patch16`(BiomedCLIP 아님)임을 재현으로 확정. 상세 근거는 `WorkOrder/통합모델_라이브추론_보고서_20260923.md` 참고.
 - **2026-09-23 (1)**: `merged_project` 사용 흔적을 전수 점검하고 README를 갱신. 통합(OASIS-3+ADNI) 산출물이 실제로 존재·검증되었으나 당시에는 UI 경로에 연결되어 있지 않았다는 점(이후 위 항목에서 연결됨), `merged_project`가 3개 분할 폴더의 무손실 병합 결과라는 점을 명시. 상세 근거는 `WorkOrder/merged_project_점검보고서_20260923.md` 참고.
 - **(이전)**: `graph_xai_extension`(3×3 구역 민감도 분석 + Graph XAI + 의료진용/기술용 PDF 보고서) 추가, `clip_xai_app`에 모델 레지스트리/어댑터 계층과 XAI 아티팩트 식별·색인 체계 추가.
@@ -331,6 +332,19 @@ clinical_validation: false
 
 ### 주요 실행/검증 명령
 
+전체 테스트(빠른 스위트만, 기본값 — `clip_xai_app/pytest.ini` 참고):
+
+```powershell
+cd clip_xai_app
+python -m pytest -q
+```
+
+느린 전체 검증(573-scan 재현, ~7~8분)까지 포함:
+
+```powershell
+python -m pytest tests/test_merged_full_validation.py -v -m slow
+```
+
 문법 검사:
 
 ```powershell
@@ -390,14 +404,18 @@ python -m pip install -r clip_xai_app\requirements.txt
 - handoff 패키지의 `data/xai_samples/images/`
 - `graph_xai_extension/outputs/` 생성물
 
-`merged_project/`, 3개 분할 폴더, 최상위 `artifacts/`, `scripts/`, `WorkOrder/`는 `.gitignore`에 등록되어 있지 않으며 현재 git에 커밋되지 않은 상태(untracked)입니다. 대용량 데이터(`merged_project*` 4개 폴더, 총 약 190,850 파일/약 19.3GB)를 커밋하지 않으려면 별도로 `.gitignore`에 추가하는 것을 검토하세요(이번 작업 범위에서는 `.gitignore`를 변경하지 않았습니다).
+`merged_project/`와 3개 분할 폴더(`merged_project-20260825T...-1-*`)는 대용량 데이터(총 약 190,850 파일/약 19.3GB)라 `.gitignore`에 등록되어 git에 커밋되지 않습니다. 팀 공유용으로 라이브 추론에 실제 필요한 가중치 3개(`clip_best.pt`, `3dcnn_best.pt`, `gbm_baseline.txt`, ~4.3MB)만 압축한 `merged_model_release/`도 같은 이유로 `.gitignore`에 등록되어 있습니다(배치 안내는 `merged_model_release/README_모델파일_배치.txt` 참고). 반면 최상위 `artifacts/`(병합 검증 증거), `scripts/`(병합/검증 스크립트), `WorkOrder/`(작업지시서 기록)는 2026-09-26에 git에 커밋되었습니다.
 
 ### 남은 작업
 
-- 테스트 파일에 실제 pytest 케이스 작성
-- PDF 보고서 생성 로직의 단위 테스트 추가
-- UI end-to-end 테스트 자동화
-- 전체 `pytest -q` 통과 기준 정리
+아래 5개 항목은 이 부록이 처음 작성됐던 시점(OASIS-3 단독 handoff 검증 단계)의 목록이며, 통합 모델 라이브 추론 전환(2026-09-23)과 이번 정리(2026-09-26) 이후로는 모두 해소되었습니다:
+
+- ~~테스트 파일에 실제 pytest 케이스 작성~~ — 2026-09-26 확인: 전체 테스트 파일(`tests/*.py`)에 스텁/placeholder 없이 실제 assertion이 있는 케이스만 존재함을 재확인(`pass`/`assert True`/`TODO`/`NotImplementedError` 패턴 grep 결과 0건).
+- ~~PDF 보고서 생성 로직의 단위 테스트 추가~~ — 2026-09-26: `tests/test_report_helpers.py` 신설. `src/report.py`의 순수 헬퍼(`infer_subject_id`, `validate_same_mr_id`, `classify_output_separation`, `_assert_probabilities_sum_to_one`, `_short_digest`, `_prediction_status_text`, `_artifact_slice_token`, `_merged_cell`/`_merged_branch_prob_table`/`_merged_kv_table`)를 대상으로 17개 단위 테스트 추가(기존에는 `create_basic_pdf_report`/`build_merged_full_pdf_report` 같은 최종 조립 함수를 통해서만 간접 검증됨).
+- ~~UI end-to-end 테스트 자동화~~ — 2026-09-26: `tests/test_ui_e2e.py` 신설. `app.py::build_app()`이 반환하는 실제 `gr.Blocks` 앱을 임시 포트로 실제 기동한 뒤 `gradio_client`로 실 HTTP 요청을 보내 `.click()` 배선·컴포넌트 직렬화까지 검증(scan_id 조회, 이미지 업로드, 잘못된 scan_id 처리 3케이스). 기존 테스트들은 `analyze_merged_scan` 등 내부 함수를 직접 호출해 UI 배선 자체는 검증하지 않았음.
+- ~~전체 `pytest -q` 통과 기준 정리~~ — 2026-09-26: `clip_xai_app/pytest.ini` 신설. (1) 이 프로젝트가 쓰지 않는 `pytest-qt` 플러그인이 이 저장소가 아닌 로컬 아나콘다 환경에 깔려 있어 `pytest -q` 실행 시 `INTERNALERROR`로 즉시 죽던 문제를 `addopts = -p no:pytest-qt`로 해결. (2) 느린 전체 검증(`test_merged_full_validation.py`, ~7~8분)에 `@pytest.mark.slow`를 붙이고 `addopts`에 `-m "not slow"`를 추가해 기본 실행에서 자동 제외(명시 실행은 `pytest tests/test_merged_full_validation.py -v -m slow`). (3) 이 개발 환경에서 ESTsoft 계열 도구로 추정되는 무언가가 `tempfile.tempdir`을 프로세스 전역으로 권한 없는 폴더(`.../ESTsoft/CreatorTemp`)로 덮어써 `tmp_path`를 쓰는 모든 테스트가 `PermissionError`로 죽던 문제를, 저장소 상대 경로(`--basetemp=.pytest_tmp`, `.gitignore` 등록)로 고정해 해결. 결과적으로 `clip_xai_app/`에서 별도 플래그 없이 `pytest -q`만 실행하면 통과함(확인: 62 passed, 4 deselected, ~80초).
+
+여전히 별도 연구 과제로 남아 있는 항목:
+
 - XAI 전경/배경 QC 수치 연동 가능 여부 검토
-- 전체 슬라이스 XAI 일관성 검증은 별도 연구 과제로 분리
-- 통합 모델(`merged_project`)의 라이브 추론을 활성화하려면 `clip_xai_app/artifacts/verification/missing_handoff_requirements.md`에 정리된 누락 항목(백본/전처리 계약, 3D CNN 아키텍처 코드, GBM `is_adni` 구성 규칙, 앙상블 결합식)을 채워야 함
+- 전체 슬라이스 XAI 일관성 검증(별도 연구 과제로 분리)
