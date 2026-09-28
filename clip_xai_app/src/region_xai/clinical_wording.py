@@ -59,6 +59,21 @@ def format_percent(value: float, digits: int = 2) -> str:
     return f"{value * 100:.{digits}f}%"
 
 
+def build_before_after_caption(before_probability: float, after_probability: float, masking_method: str) -> str:
+    """Plain-language caption for a presentation-facing before/after masking
+    image pair, e.g. "처리 전 모델 출력값 78.92% / 처리 후 모델 출력값 1.74% /
+    변화량 -77.18% / 적용한 처리 방식: 검은색으로 가림". `변화량` is
+    (after - before), matching what a non-expert sees change on the page
+    (not `probability_drop`, which is defined as before - after)."""
+    change_percentage_points = (after_probability - before_probability) * 100
+    return (
+        f"처리 전 모델 출력값 {format_percent(before_probability)} / "
+        f"처리 후 모델 출력값 {format_percent(after_probability)} / "
+        f"변화량 {change_percentage_points:+.2f}% / "
+        f"적용한 처리 방식: {masking_method_label(masking_method)}"
+    )
+
+
 def build_branch_summary_sentence(
     *, branch_label: str, predicted_class: str, predicted_probability: float, primary_masking_method: str,
     most_sensitive_region_plain: str, probability_before: float, probability_after: float, stability_verdict: str,

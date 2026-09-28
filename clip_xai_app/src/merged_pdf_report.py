@@ -37,8 +37,8 @@ from .adapters.merged_grad_eclip import (
 from .merged_region_analysis import BranchRegionAnalysis
 from .region_xai.clinical_wording import (
     OUTPUT_VALUE_DISCLAIMER_TEMPLATE, REGION_3D_DISCLAIMER, STABILITY_LOW_WARNING,
-    build_branch_summary_sentence, build_top_changes_rows, format_percent, masking_method_label,
-    region_plain_name_2d, region_plain_name_3d, stability_plain,
+    build_before_after_caption, build_branch_summary_sentence, build_top_changes_rows, format_percent,
+    masking_method_label, region_plain_name_2d, region_plain_name_3d, stability_plain,
 )
 from .region_xai.visualization import render_probability_bar_png, render_region_graph_2d_png, render_region_graph_3d_layers_png
 from .report import (
@@ -203,12 +203,31 @@ def _clinical_page1(
     return block
 
 
+def _clinical_before_after_panel(
+    before_path: Path, after_path: Path, before_probability: float, after_probability: float,
+    masking_method: str, styles, clinical_table_style,
+) -> list:
+    """Presentation-friendly before/after masking panel: two side-by-side
+    images captioned in plain Korean with the actual before/after model
+    output values, so a non-expert audience can read the effect directly
+    off the page instead of having to interpret a heatmap."""
+    table = Table([
+        [_merged_cell("처리 전", styles, "ClinicalSmall"), _merged_cell("처리 후", styles, "ClinicalSmall")],
+        [RLImage(str(before_path), width=65 * mm, height=65 * mm), RLImage(str(after_path), width=65 * mm, height=65 * mm)],
+    ], colWidths=[76 * mm, 76 * mm])
+    table.setStyle(clinical_table_style)
+    caption = build_before_after_caption(before_probability, after_probability, masking_method)
+    return [Spacer(1, 10), KeepTogether([table, Spacer(1, 4), Paragraph(caption, styles["ClinicalBody"])])]
+
+
 def _clinical_page2(
     clip_original_image, clip_heatmap_224, clip_analysis: BranchRegionAnalysis,
     cnn3d_volume, cnn3d_cam_volume, cnn3d_analysis: BranchRegionAnalysis | None,
     tmp_dir: Path, styles, clinical_table_style,
 ) -> list:
     from .adapters.merged_cnn3d_gradcam import central_slice_overlays
+    from .region_xai.masking import apply_region_mask
+    import numpy as np
 
     block = [Paragraph("영상으로 보는 설명 (CLIP)", styles["ClinicalHeading"])]
 
@@ -235,6 +254,17 @@ def _clinical_page2(
         styles["ClinicalSmall"],
     )]))
 
+    clip_top_result = clip_analysis.absolute_sensitivity[0].result
+    clip_gray = np.array(clip_original_image.convert("L"))
+    clip_masked = apply_region_mask(clip_gray, top_region.bbox, method=clip_analysis.primary_method)
+    clip_before_path, clip_after_path = tmp_dir / "clip_plain_before.png", tmp_dir / "clip_plain_after.png"
+    PILImage.fromarray(clip_gray).convert("RGB").save(clip_before_path)
+    PILImage.fromarray(clip_masked).convert("RGB").save(clip_after_path)
+    block.extend(_clinical_before_after_panel(
+        clip_before_path, clip_after_path, clip_top_result.original_class_probability,
+        clip_top_result.masked_original_class_probability, clip_analysis.primary_method, styles, clinical_table_style,
+    ))
+
     if cnn3d_analysis is not None and cnn3d_volume is not None:
         block.append(Spacer(1, 12))
         block.append(Paragraph("영상으로 보는 설명 (3D CNN)", styles["ClinicalHeading"]))
@@ -251,6 +281,19 @@ def _clinical_page2(
         )
         cnn3d_grid.setStyle(clinical_table_style)
         block.append(KeepTogether([cnn3d_grid, Spacer(1, 4), Paragraph(REGION_3D_DISCLAIMER, styles["ClinicalSmall"])]))
+
+        cnn3d_top_ranked = cnn3d_analysis.absolute_sensitivity[0]
+        cnn3d_top_region = next(r for r in cnn3d_analysis.regions if r.name == cnn3d_top_ranked.region_name)
+        cnn3d_masked = apply_region_mask(cnn3d_volume, cnn3d_top_region.bbox, method=cnn3d_analysis.primary_method)
+        d = cnn3d_volume.shape[0] // 2
+        cnn3d_before_path, cnn3d_after_path = tmp_dir / "cnn3d_plain_before.png", tmp_dir / "cnn3d_plain_after.png"
+        render_plain_slice(cnn3d_volume[d, :, :]).save(cnn3d_before_path)
+        render_plain_slice(cnn3d_masked[d, :, :]).save(cnn3d_after_path)
+        block.extend(_clinical_before_after_panel(
+            cnn3d_before_path, cnn3d_after_path, cnn3d_top_ranked.result.original_class_probability,
+            cnn3d_top_ranked.result.masked_original_class_probability, cnn3d_analysis.primary_method,
+            styles, clinical_table_style,
+        ))
     else:
         block.append(Spacer(1, 12))
         block.append(Paragraph("영상으로 보는 설명 (3D CNN)", styles["ClinicalHeading"]))
