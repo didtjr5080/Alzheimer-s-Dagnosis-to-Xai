@@ -12,6 +12,7 @@ clip_xai_app/artifacts/verification/*
 clip_xai_app/artifacts/heatmaps/*
 clip_xai_app/artifacts/reports/*
 clip_xai_app/artifacts/xai/*
+clip_xai_app/artifacts/report_images/*
 clip_xai_app/artifacts/xai_artifact_index.csv
 !clip_xai_app/artifacts/verification/.gitkeep
 !clip_xai_app/artifacts/heatmaps/.gitkeep

@@ -41,7 +41,7 @@ def test_merged_tab_scan_id_analysis_via_real_http_api(running_app):
     from gradio_client import Client
 
     client = Client(running_app.local_url)
-    status_markdown, branch_table, gallery, pdf_path, status_box = client.predict(
+    status_markdown, branch_table, gallery, pdf_path, images_zip_path, status_box = client.predict(
         SAMPLE_SCAN_ID, None, api_name="/analyze_merged_ui",
     )
 
@@ -51,6 +51,8 @@ def test_merged_tab_scan_id_analysis_via_real_http_api(running_app):
     assert len(gallery) >= 3  # CLIP original/heatmap/overlay at minimum
     assert Path(pdf_path).exists()
     assert Path(pdf_path).suffix == ".pdf"
+    assert Path(images_zip_path).exists()
+    assert Path(images_zip_path).suffix == ".zip"
 
 
 def test_merged_tab_image_upload_via_real_http_api(running_app):
@@ -58,7 +60,7 @@ def test_merged_tab_image_upload_via_real_http_api(running_app):
 
     client = Client(running_app.local_url)
     image_path = str(MERGED_ROOT / "slices_multi" / f"{SAMPLE_SCAN_ID}_cor080.png")
-    status_markdown, branch_table, gallery, pdf_path, status_box = client.predict(
+    status_markdown, branch_table, gallery, pdf_path, images_zip_path, status_box = client.predict(
         "", handle_file(image_path), api_name="/analyze_merged_ui",
     )
 
@@ -66,16 +68,18 @@ def test_merged_tab_image_upload_via_real_http_api(running_app):
     assert "사용자 업로드" in status_markdown or "업로드" in status_markdown
     assert branch_table["data"]
     assert Path(pdf_path).exists()
+    assert Path(images_zip_path).exists()
 
 
 def test_merged_tab_rejects_unknown_scan_id_without_crashing_the_server(running_app):
     from gradio_client import Client
 
     client = Client(running_app.local_url)
-    status_markdown, _branch_table, gallery, pdf_path, _status_box = client.predict(
+    status_markdown, _branch_table, gallery, pdf_path, images_zip_path, _status_box = client.predict(
         "definitely_not_a_real_scan_id", None, api_name="/analyze_merged_ui",
     )
 
     assert "Analysis failed" in status_markdown
     assert pdf_path is None
+    assert images_zip_path is None
     assert gallery == []

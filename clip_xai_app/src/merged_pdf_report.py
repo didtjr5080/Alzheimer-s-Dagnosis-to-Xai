@@ -652,6 +652,68 @@ def _limitations_section(mock_mode: bool, styles) -> list:
     return [KeepTogether(block)]
 
 
+PRESENTATION_IMAGE_LABELS = ("원본 MRI", "CLIP CAM 지도", "3D CNN CAM 중첩", "Graph XAI (CLIP)")
+
+
+def build_presentation_image_bundle(
+    artifacts_root: Path,
+    *,
+    identifier: str,
+    clip_original_image: PILImage.Image,
+    clip_heatmap_224,
+    clip_analysis: BranchRegionAnalysis,
+    cnn3d_volume=None,
+    cnn3d_cam_volume=None,
+) -> Path:
+    """Saves a small, presentation-ready subset of the report's images as
+    standalone PNGs (원본 MRI / CLIP CAM 지도 / 3D CNN CAM 중첩 / Graph XAI)
+    and zips them, so a user can drop individual images straight into their
+    own slides/report instead of screenshotting them out of the PDF. Unlike
+    the PDF builder's per-run TemporaryDirectory, these files persist under
+    `artifacts_root/report_images/`. `identifier` should be a filesystem-safe
+    per-run id (e.g. run_metadata's run_id) rather than a raw scan_id, since
+    the image-upload path's scan_id is a free-text placeholder like
+    "(업로드된 이미지)". When cnn3d data is unavailable (e.g. the CLIP-only
+    image-upload path), the 3D CNN image is skipped rather than raising --
+    the same "report what's available" rule used throughout this module."""
+    import shutil
+    from zipfile import ZIP_DEFLATED, ZipFile
+
+    from .adapters.merged_cnn3d_gradcam import central_slice_overlays
+
+    bundle_dir = artifacts_root / "report_images" / identifier
+    if bundle_dir.exists():
+        shutil.rmtree(bundle_dir)
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+
+    saved_paths: list[Path] = []
+
+    original_path = bundle_dir / "01_원본_MRI.png"
+    clip_original_image.convert("RGB").resize((224, 224)).save(original_path)
+    saved_paths.append(original_path)
+
+    cam_path = bundle_dir / "02_CLIP_CAM_지도.png"
+    render_cam_only(clip_heatmap_224).save(cam_path)
+    saved_paths.append(cam_path)
+
+    if cnn3d_volume is not None and cnn3d_cam_volume is not None:
+        overlays = central_slice_overlays(cnn3d_volume, cnn3d_cam_volume)
+        vslice, cslice = overlays["coronal"]
+        cnn3d_path = bundle_dir / "03_3D_CNN_CAM_중첩.png"
+        render_overlay_image(vslice, cslice).save(cnn3d_path)
+        saved_paths.append(cnn3d_path)
+
+    graph_path = bundle_dir / "04_Graph_XAI_CLIP.png"
+    render_region_graph_2d_png(clip_analysis.graph, graph_path)
+    saved_paths.append(graph_path)
+
+    zip_path = artifacts_root / "report_images" / f"{identifier}_presentation_images.zip"
+    with ZipFile(zip_path, "w", ZIP_DEFLATED) as zf:
+        for path in saved_paths:
+            zf.write(path, arcname=path.name)
+    return zip_path
+
+
 def build_merged_full_pdf_report(
     artifacts_root: Path,
     *,

@@ -19,7 +19,9 @@ from src.inference import analyze_subject
 from src.merged_inference import (
     analyze_merged_scan, analyze_merged_uploaded_image, list_test_scan_ids, merged_project_available,
 )
-from src.merged_pdf_report import MERGED_FULL_XAI_LIMITATION_TEXT, build_merged_full_pdf_report
+from src.merged_pdf_report import (
+    MERGED_FULL_XAI_LIMITATION_TEXT, build_merged_full_pdf_report, build_presentation_image_bundle,
+)
 from src.model_registry import registry_rows
 from src.report import create_basic_pdf_report
 from src.visualization import heatmap_to_rgb, overlay_heatmap
@@ -300,19 +302,27 @@ def analyze_merged_ui(scan_id: str, image_file=None):
             cnn3d_cam_volume=result.cnn3d_cam_volume, cnn3d_analysis=result.cnn3d_analysis,
             run_metadata=run_metadata,
         )
+        images_zip_path = build_presentation_image_bundle(
+            config.artifacts_root,
+            identifier=run_metadata["run_id"],
+            clip_original_image=result.clip_xai["rep_image"], clip_heatmap_224=result.clip_xai["heatmap_224"],
+            clip_analysis=result.clip_analysis, cnn3d_volume=result.cnn3d_volume,
+            cnn3d_cam_volume=result.cnn3d_cam_volume,
+        )
 
         return (
             "\n\n".join(status_lines),
             _merged_branch_table(result.branch_probs),
             gallery_items,
             str(report_path),
+            str(images_zip_path),
             "Analysis completed.",
         )
     except Exception as exc:
         error_id = uuid4().hex[:8]
         LOGGER.error("Merged UI analysis failed [%s]\n%s", error_id, traceback.format_exc())
         message = f"Analysis failed. Error ID: `{error_id}`. {exc}"
-        return message, pd.DataFrame(), [], None, str(exc)
+        return message, pd.DataFrame(), [], None, None, str(exc)
 
 
 def build_app() -> gr.Blocks:
@@ -356,11 +366,17 @@ def build_app() -> gr.Blocks:
                     )
                     gr.Markdown(f"**XAI limitation:** {MERGED_FULL_XAI_LIMITATION_TEXT} {LATERALITY_NOT_VERIFIED_NOTE}")
                     merged_pdf_output = gr.File(label="PDF report download")
+                    merged_images_zip_output = gr.File(
+                        label="발표용 이미지 모음 (zip): 원본 MRI / CLIP CAM 지도 / 3D CNN CAM 중첩 / Graph XAI(CLIP)"
+                    )
 
                     merged_analyze_button.click(
                         analyze_merged_ui,
                         inputs=[scan_id_input, merged_image_input],
-                        outputs=[merged_status_markdown, merged_branch_table, merged_gallery, merged_pdf_output, merged_status_box],
+                        outputs=[
+                            merged_status_markdown, merged_branch_table, merged_gallery,
+                            merged_pdf_output, merged_images_zip_output, merged_status_box,
+                        ],
                     )
                 else:
                     gr.Markdown(
