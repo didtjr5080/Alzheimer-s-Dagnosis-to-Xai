@@ -36,13 +36,13 @@ from .adapters.merged_grad_eclip import (
 )
 from .merged_region_analysis import BranchRegionAnalysis
 from .region_xai.clinical_wording import (
-    OUTPUT_VALUE_DISCLAIMER_TEMPLATE, REGION_3D_DISCLAIMER, STABILITY_LOW_WARNING,
-    build_before_after_caption, build_branch_summary_sentence, build_top_changes_rows, format_percent,
-    masking_method_label, region_plain_name_2d, region_plain_name_3d, stability_plain,
+    REGION_3D_DISCLAIMER,
+    build_before_after_caption, build_top_changes_rows, format_percent,
+    masking_method_label, region_plain_name_2d, region_plain_name_3d,
 )
 from .region_xai.visualization import render_probability_bar_png, render_region_graph_2d_png, render_region_graph_3d_layers_png
 from .report import (
-    RESEARCH_USE_WARNING, _footer, _merged_branch_prob_table, _merged_cell, _merged_kv_table, _styles, _table_style,
+    _footer, _merged_branch_prob_table, _merged_cell, _merged_kv_table, _styles, _table_style,
     ensure_report_dir,
 )
 from .warnings import XAI_LIMITATION_TEXT
@@ -55,26 +55,24 @@ MERGED_FULL_XAI_LIMITATION_TEXT = (
 )
 
 REVIEWER_SIGNATURE_DISCLAIMER = (
-    "본 서명은 연구용 AI 출력물을 열람했다는 기록이며, 진단 확정·치료 결정·모델 승인 또는 "
-    "의료기기 성능 검증을 의미하지 않습니다."
+    "분석 결과를 영상 판독·임상 정보와 함께 검토한 기록입니다."
 )
-DEFAULT_REVIEWER_SECTION_TITLE = "연구 검토자 확인"
-TECHNICAL_APPENDIX_TITLE = "연구자용 기술 부록"
+DEFAULT_REVIEWER_SECTION_TITLE = "보고서 검토 확인"
+TECHNICAL_APPENDIX_TITLE = "상세 분석 및 재현 정보"
 TECHNICAL_APPENDIX_INTRO = (
-    "다음은 모델 설정, 통계 지표, 재현 정보를 포함한 연구자·개발자용 상세 자료입니다. "
-    "의료진용 요약과 동일한 실행 결과이며, 수치는 요약본과 완전히 동일합니다."
+    "동일한 실행에서 얻은 모델 출력, 구역별 민감도 및 분석 환경을 기록합니다."
 )
 
 
 def _region_ranking_table(ranked_regions, table_style, styles) -> Table:
-    header = ["순위", "구역", "CAM 비율", "마스킹 전", "마스킹 후", "확률 변화"]
+    header = ["순위", "구역", "CAM 비율", "마스킹 전", "마스킹 후", "출력 감소 (%p)"]
     rows = [[_merged_cell(h, styles) for h in header]]
     for ranked in ranked_regions:
         r = ranked.result
         rows.append([_merged_cell(c, styles) for c in (
             ranked.rank, r.region_name, f"{r.cam_ratio:.4f}",
-            f"{r.original_class_probability:.4f}", f"{r.masked_original_class_probability:.4f}",
-            f"{r.probability_drop:+.4f}",
+            format_percent(r.original_class_probability), format_percent(r.masked_original_class_probability),
+            f"{r.probability_drop * 100:+.2f}",
         )])
     table = Table(rows, repeatRows=1, colWidths=[14 * mm, 34 * mm, 24 * mm, 26 * mm, 26 * mm, 26 * mm])
     table.setStyle(table_style)
@@ -129,34 +127,30 @@ def _agreement_table(agreement_by_method, table_style, styles) -> Table:
 
 def _clinical_page1(
     predicted_class_ensemble, ensemble_probs, branch_probs, clip_analysis: BranchRegionAnalysis,
-    cnn3d_analysis: BranchRegionAnalysis | None, styles, clinical_table_style,
+    cnn3d_analysis: BranchRegionAnalysis | None, styles, clinical_table_style, metadata_rows=(), input_level="스캔 단위",
 ) -> list:
     clip_top = clip_analysis.absolute_sensitivity[0].result if clip_analysis.absolute_sensitivity else None
     cnn3d_top = (
         cnn3d_analysis.absolute_sensitivity[0].result
         if cnn3d_analysis is not None and cnn3d_analysis.absolute_sensitivity else None
     )
-    clip_verdict = clip_analysis.stability.stability_verdict
-    cnn3d_verdict = cnn3d_analysis.stability.stability_verdict if cnn3d_analysis is not None else None
 
     title_label = "모델 예측 범주 (앙상블)" if ensemble_probs is not None else "모델 예측 범주 (CLIP, 앙상블 불가)"
     card_rows = [(title_label, predicted_class_ensemble)]
     if ensemble_probs is not None:
-        card_rows.append((f"앙상블 {predicted_class_ensemble} 출력값", format_percent(ensemble_probs[predicted_class_ensemble])))
+        card_rows.append((f"앙상블 {predicted_class_ensemble} 출력 점수", format_percent(ensemble_probs[predicted_class_ensemble])))
+        card_rows.append(("앙상블 클래스별 출력 점수", " / ".join(f"{c} {format_percent(ensemble_probs[c])}" for c in ("CN", "MCI", "AD"))))
     for branch in ("CLIP", "3D CNN", "GBM baseline"):
         probs = branch_probs.get(branch)
         if probs is not None:
             branch_pred = max(probs, key=probs.get)
-            card_rows.append((f"{branch} 출력값", f"{branch_pred} {format_percent(probs[branch_pred])}"))
+            card_rows.append((f"{branch} {input_level} 분류", f"{branch_pred} {format_percent(probs[branch_pred])}"))
         else:
-            card_rows.append((f"{branch} 출력값", "사용 불가"))
+            card_rows.append((f"{branch} {input_level} 분류", "사용 불가"))
     if clip_top is not None:
         card_rows.append(("CLIP 가장 민감하게 반응한 위치", region_plain_name_2d(clip_top.region_name)))
     if cnn3d_top is not None:
         card_rows.append(("3D CNN 가장 민감하게 반응한 위치", region_plain_name_3d(cnn3d_top.region_name)))
-    card_rows.append(("CLIP 설명 결과의 일관성", stability_plain(clip_verdict)))
-    if cnn3d_verdict is not None:
-        card_rows.append(("3D CNN 설명 결과의 일관성", stability_plain(cnn3d_verdict)))
 
     card_table = Table(
         [[_merged_cell(k, styles, "ClinicalLabel"), _merged_cell(v, styles, "ClinicalValue")] for k, v in card_rows],
@@ -165,40 +159,13 @@ def _clinical_page1(
     card_table.setStyle(clinical_table_style)
 
     block = [
-        Paragraph("AI MRI 분석 요약 - 연구용", styles["ClinicalTitle"]),
+        Paragraph("MediOn | 뇌 MRI 인공지능 분석 보고서", styles["ClinicalTitle"]),
         Spacer(1, 3),
-        Paragraph("연구용(Research Use Only)", styles["ClinicalSmall"]),
+        Paragraph("용도: 연구 및 의료진 검토 참고 · 영상 판독·임상 정보와 종합하여 검토", styles["ClinicalSmall"]),
+        *([_merged_kv_table(metadata_rows, [38 * mm, 126 * mm], clinical_table_style, styles)] if metadata_rows else []),
         Spacer(1, 10),
         card_table,
-        Spacer(1, 6),
-        Paragraph(OUTPUT_VALUE_DISCLAIMER_TEMPLATE.format(cls=predicted_class_ensemble), styles["ClinicalSmall"]),
-        Spacer(1, 14),
     ]
-
-    if clip_top is not None:
-        sentence = build_branch_summary_sentence(
-            branch_label="CLIP", predicted_class=clip_top.original_predicted_class,
-            predicted_probability=clip_top.original_class_probability, primary_masking_method=clip_analysis.primary_method,
-            most_sensitive_region_plain=region_plain_name_2d(clip_top.region_name),
-            probability_before=clip_top.original_class_probability, probability_after=clip_top.masked_original_class_probability,
-            stability_verdict=clip_verdict,
-        )
-        block.append(Paragraph(sentence, styles["ClinicalBody"]))
-        block.append(Spacer(1, 6))
-    if cnn3d_top is not None:
-        sentence = build_branch_summary_sentence(
-            branch_label="3D CNN", predicted_class=cnn3d_top.original_predicted_class,
-            predicted_probability=cnn3d_top.original_class_probability, primary_masking_method=cnn3d_analysis.primary_method,
-            most_sensitive_region_plain=region_plain_name_3d(cnn3d_top.region_name),
-            probability_before=cnn3d_top.original_class_probability, probability_after=cnn3d_top.masked_original_class_probability,
-            stability_verdict=cnn3d_verdict,
-        )
-        block.append(Paragraph(sentence, styles["ClinicalBody"]))
-        block.append(Spacer(1, 10))
-
-    low_branches = [name for name, v in (("CLIP", clip_verdict), ("3D CNN", cnn3d_verdict)) if v == "낮음"]
-    if low_branches:
-        block.append(Paragraph(f"({', '.join(low_branches)}) {STABILITY_LOW_WARNING}", styles["ClinicalWarning"]))
 
     return block
 
@@ -213,7 +180,7 @@ def _clinical_before_after_panel(
     off the page instead of having to interpret a heatmap."""
     table = Table([
         [_merged_cell("처리 전", styles, "ClinicalSmall"), _merged_cell("처리 후", styles, "ClinicalSmall")],
-        [RLImage(str(before_path), width=65 * mm, height=65 * mm), RLImage(str(after_path), width=65 * mm, height=65 * mm)],
+        [RLImage(str(before_path), width=45 * mm, height=45 * mm), RLImage(str(after_path), width=45 * mm, height=45 * mm)],
     ], colWidths=[76 * mm, 76 * mm])
     table.setStyle(clinical_table_style)
     caption = build_before_after_caption(before_probability, after_probability, masking_method)
@@ -229,7 +196,7 @@ def _clinical_page2(
     from .region_xai.masking import apply_region_mask
     import numpy as np
 
-    block = [Paragraph("영상으로 보는 설명 (CLIP)", styles["ClinicalHeading"])]
+    block = [Paragraph("영상 기반 설명 및 대표 마스킹 (CLIP)", styles["ClinicalHeading"])]
 
     original_path = tmp_dir / "clip_original.png"
     clip_original_image.convert("RGB").resize((224, 224)).save(original_path)
@@ -243,9 +210,9 @@ def _clinical_page2(
 
     grid = Table([
         [_merged_cell("1. 원본 MRI (axial)", styles, "ClinicalSmall"), _merged_cell("2. 모델 반응 지도", styles, "ClinicalSmall")],
-        [RLImage(str(original_path), width=65 * mm, height=65 * mm), RLImage(str(cam_path), width=65 * mm, height=65 * mm)],
+        [RLImage(str(original_path), width=55 * mm, height=55 * mm), RLImage(str(cam_path), width=55 * mm, height=55 * mm)],
         [_merged_cell("3. MRI + 반응 지도 중첩", styles, "ClinicalSmall"), _merged_cell("4. 출력 변화가 가장 컸던 구역", styles, "ClinicalSmall")],
-        [RLImage(str(overlay_path), width=65 * mm, height=65 * mm), RLImage(str(highlight_path), width=65 * mm, height=65 * mm)],
+        [RLImage(str(overlay_path), width=55 * mm, height=55 * mm), RLImage(str(highlight_path), width=55 * mm, height=55 * mm)],
     ], colWidths=[76 * mm, 76 * mm])
     grid.setStyle(clinical_table_style)
     block.append(KeepTogether([grid, Spacer(1, 4), Paragraph(
@@ -260,6 +227,7 @@ def _clinical_page2(
     clip_before_path, clip_after_path = tmp_dir / "clip_plain_before.png", tmp_dir / "clip_plain_after.png"
     PILImage.fromarray(clip_gray).convert("RGB").save(clip_before_path)
     PILImage.fromarray(clip_masked).convert("RGB").save(clip_after_path)
+    block.append(Paragraph(f"대표 단면 XAI 대상: {clip_top_result.original_predicted_class} · 화면 기준 구역: {top_region.name}", styles["ClinicalSmall"]))
     block.extend(_clinical_before_after_panel(
         clip_before_path, clip_after_path, clip_top_result.original_class_probability,
         clip_top_result.masked_original_class_probability, clip_analysis.primary_method, styles, clinical_table_style,
@@ -267,7 +235,6 @@ def _clinical_page2(
 
     if cnn3d_analysis is not None and cnn3d_volume is not None:
         block.append(Spacer(1, 12))
-        block.append(Paragraph("영상으로 보는 설명 (3D CNN)", styles["ClinicalHeading"]))
         overlays = central_slice_overlays(cnn3d_volume, cnn3d_cam_volume)
         cnn3d_imgs = []
         for i, (view, (vslice, cslice)) in enumerate(overlays.items()):
@@ -276,11 +243,11 @@ def _clinical_page2(
             cnn3d_imgs.append((view, path))
         cnn3d_grid = Table(
             [[_merged_cell(v, styles, "ClinicalSmall") for v, _ in cnn3d_imgs],
-             [RLImage(str(p), width=48 * mm, height=48 * mm) for _, p in cnn3d_imgs]],
+             [RLImage(str(p), width=40 * mm, height=40 * mm) for _, p in cnn3d_imgs]],
             colWidths=[51 * mm] * 3,
         )
         cnn3d_grid.setStyle(clinical_table_style)
-        block.append(KeepTogether([cnn3d_grid, Spacer(1, 4), Paragraph(REGION_3D_DISCLAIMER, styles["ClinicalSmall"])]))
+        block.append(KeepTogether([Paragraph("영상 기반 설명 및 대표 마스킹 (3D CNN)", styles["ClinicalHeading"]), cnn3d_grid, Spacer(1, 4), Paragraph(REGION_3D_DISCLAIMER, styles["ClinicalSmall"])]))
 
         cnn3d_top_ranked = cnn3d_analysis.absolute_sensitivity[0]
         cnn3d_top_region = next(r for r in cnn3d_analysis.regions if r.name == cnn3d_top_ranked.region_name)
@@ -289,6 +256,7 @@ def _clinical_page2(
         cnn3d_before_path, cnn3d_after_path = tmp_dir / "cnn3d_plain_before.png", tmp_dir / "cnn3d_plain_after.png"
         render_plain_slice(cnn3d_volume[d, :, :]).save(cnn3d_before_path)
         render_plain_slice(cnn3d_masked[d, :, :]).save(cnn3d_after_path)
+        block.append(Paragraph(f"3D CNN XAI 대상: {cnn3d_top_ranked.result.original_predicted_class} · 배열 구역: {cnn3d_top_region.name}", styles["ClinicalSmall"]))
         block.extend(_clinical_before_after_panel(
             cnn3d_before_path, cnn3d_after_path, cnn3d_top_ranked.result.original_class_probability,
             cnn3d_top_ranked.result.masked_original_class_probability, cnn3d_analysis.primary_method,
@@ -305,7 +273,7 @@ def _clinical_page2(
 
 
 def _clinical_page3(clip_analysis, cnn3d_analysis, reviewer_section_title, styles, clinical_table_style) -> list:
-    block = [Paragraph("주요 변화 및 설명 일관성", styles["ClinicalHeading"])]
+    block = [Paragraph("주요 구역별 모델 출력 변화", styles["ClinicalHeading"])]
 
     branch_entries = [("CLIP", clip_analysis, region_plain_name_2d)]
     if cnn3d_analysis is not None:
@@ -313,7 +281,7 @@ def _clinical_page3(clip_analysis, cnn3d_analysis, reviewer_section_title, style
 
     for label, analysis, region_fn in branch_entries:
         rows = build_top_changes_rows(analysis.supporting, analysis.suppressing, region_fn)
-        block.append(Paragraph(f"{label} 주요 변화", styles["ClinicalBody"]))
+        block.append(Paragraph(f"{label} 주요 변화 · 대상: {analysis.results_by_method[analysis.primary_method][0].original_predicted_class}", styles["Heading2"]))
         if rows:
             table_rows = [["구분", "위치", "모델 출력 변화", "쉬운 설명"]]
             for row in rows:
@@ -329,10 +297,6 @@ def _clinical_page3(clip_analysis, cnn3d_analysis, reviewer_section_title, style
             block.append(table)
         else:
             block.append(Paragraph("표시할 만한 뚜렷한 변화가 관찰되지 않았습니다.", styles["ClinicalBody"]))
-        verdict = analysis.stability.stability_verdict
-        block.append(Paragraph(f"{label} 설명 일관성: {stability_plain(verdict)}", styles["ClinicalBody"]))
-        if verdict == "낮음":
-            block.append(Paragraph(STABILITY_LOW_WARNING, styles["ClinicalWarning"]))
         block.append(Spacer(1, 8))
 
     block.append(Spacer(1, 8))
@@ -358,7 +322,6 @@ def _section_input_model(run_metadata, scan_id, dataset_source, split, true_labe
         ("3D CNN 모델 ID", "merged_cnn3d::Simple3DCNN_Stable"),
         ("GBM 모델 ID", "merged_gbm::gbm_baseline"),
         ("장치(device)", run_metadata.get("device", "N/A")),
-        ("마스킹 방법(비교 대상)", "zero, mean, blur"),
         ("2D 그리드 크기", "3x3 (9구역)"), ("3D 그리드 크기", "3x3x3 (27구역)"),
     ]
     return [KeepTogether([
@@ -372,16 +335,16 @@ def _section_input_model(run_metadata, scan_id, dataset_source, split, true_labe
     ])]
 
 
-def _section_prediction(predicted_class_ensemble, ensemble_probs, branch_probs, table_style, styles) -> list:
+def _section_prediction(predicted_class_ensemble, ensemble_probs, branch_probs, table_style, styles, input_level="스캔 단위") -> list:
     block = [
-        Paragraph("2. 모델 예측 확률", styles["Heading1"]),
+        Paragraph(f"2. {input_level} 모델 출력 점수", styles["Heading1"]),
         _merged_branch_prob_table(branch_probs, table_style, styles),
         Spacer(1, 4),
     ]
     if ensemble_probs is not None:
         block.append(Paragraph(
             f"최종 앙상블 예측: <b>{predicted_class_ensemble}</b> "
-            f"(CN={ensemble_probs['CN']:.4f}, MCI={ensemble_probs['MCI']:.4f}, AD={ensemble_probs['AD']:.4f}, "
+            f"(CN={format_percent(ensemble_probs['CN'])}, MCI={format_percent(ensemble_probs['MCI'])}, AD={format_percent(ensemble_probs['AD'])}, "
             f"가중치 GBM 0.35 + 3D CNN 0.45 + CLIP 0.20)",
             styles["BodyText"],
         ))
@@ -434,14 +397,14 @@ def _section_rankings(analysis: BranchRegionAnalysis, branch_label: str, section
             "해부학적 중요성을 의미하지 않습니다.",
             styles["BodyText"],
         ),
-        Paragraph(f"(현재 랭킹은 '{analysis.primary_method}' 마스킹 결과 기준; 마스킹 비교는 뒤 절 참고)", styles["SmallKorean"]),
+        Paragraph(f"분석 대상: {analysis.results_by_method[analysis.primary_method][0].original_predicted_class} · 대표 마스킹 방식: {analysis.primary_method}", styles["SmallKorean"]),
     ])]
     predicted_class = analysis.results_by_method[analysis.primary_method][0].original_predicted_class
 
     support_block = [Paragraph(f"{section_prefix}-1. 지지 근거 순위 (probability_drop > 0)", styles["Heading2"])]
     if analysis.supporting:
         support_block.append(Paragraph(
-            f"해당 구역을 가렸을 때 예측 클래스({predicted_class})의 확률이 감소한 구역입니다.", styles["BodyText"],
+            f"해당 구역을 가렸을 때 예측 클래스({predicted_class})의 모델 출력 점수가 감소한 구역입니다.", styles["BodyText"],
         ))
     else:
         support_block.append(Paragraph("지지 근거로 분류되는 구역이 없습니다.", styles["BodyText"]))
@@ -453,7 +416,7 @@ def _section_rankings(analysis: BranchRegionAnalysis, branch_label: str, section
     suppress_block = [Paragraph(f"{section_prefix}-2. 억제 근거 순위 (probability_drop < 0)", styles["Heading2"])]
     if analysis.suppressing:
         suppress_block.append(Paragraph(
-            f"해당 구역을 가렸을 때 예측 클래스({predicted_class})의 확률이 오히려 증가한 구역입니다.", styles["BodyText"],
+            f"해당 구역을 가렸을 때 예측 클래스({predicted_class})의 모델 출력 점수가 증가한 구역입니다.", styles["BodyText"],
         ))
     else:
         suppress_block.append(Paragraph("억제 근거로 분류되는 구역이 없습니다.", styles["BodyText"]))
@@ -604,44 +567,43 @@ def _section_agreement(clip_analysis, cnn3d_analysis, table_style, styles) -> li
     return [KeepTogether(content)]
 
 
-def _section_graph_xai(clip_analysis, cnn3d_analysis, tmp_dir, styles) -> list:
+def _section_graph_xai(clip_analysis, cnn3d_analysis, tmp_dir, styles, section_number=5) -> list:
     bar_clip_path = tmp_dir / "bar_clip.png"
     render_probability_bar_png(clip_analysis.results_by_method[clip_analysis.primary_method], bar_clip_path, "CLIP")
     graph_clip_path = tmp_dir / "graph_clip.png"
     render_region_graph_2d_png(clip_analysis.graph, graph_clip_path)
 
     content = [
-        Paragraph("8. Graph XAI (영상 구역별 예측 변화 지도)", styles["Heading1"]),
+        Paragraph(f"{section_number}. Graph XAI (영상 구역별 예측 변화 지도)", styles["Heading1"]),
         Paragraph(
             "그래프의 색상/부호는 probability_drop 기준입니다: 양수(+)=마스킹 시 예측 클래스 확률 감소(지지 근거), "
             "음수(-)=확률 증가(억제 근거). 노드 크기는 CAM 비율을 나타냅니다. 색상은 질환/정상을 의미하지 않습니다.",
             styles["BodyText"],
         ),
         Paragraph("CLIP", styles["Heading2"]),
-        RLImage(str(bar_clip_path), width=150 * mm, height=70 * mm),
+        RLImage(str(bar_clip_path), width=150 * mm, height=60 * mm),
         Spacer(1, 4),
-        RLImage(str(graph_clip_path), width=105 * mm, height=105 * mm),
+        RLImage(str(graph_clip_path), width=90 * mm, height=90 * mm),
     ]
+    content = [KeepTogether(content[:4]), *content[4:]]
     if cnn3d_analysis is not None:
         bar_cnn3d_path = tmp_dir / "bar_cnn3d.png"
         render_probability_bar_png(cnn3d_analysis.results_by_method[cnn3d_analysis.primary_method], bar_cnn3d_path, "3D CNN")
         graph_cnn3d_path = tmp_dir / "graph_cnn3d.png"
         render_region_graph_3d_layers_png(cnn3d_analysis.graph, graph_cnn3d_path)
-        content.extend([
+        content.append(KeepTogether([
             Spacer(1, 8),
             Paragraph("3D CNN (axis0 3개 층으로 분할 표시)", styles["Heading2"]),
-            RLImage(str(bar_cnn3d_path), width=150 * mm, height=70 * mm),
+            RLImage(str(bar_cnn3d_path), width=150 * mm, height=60 * mm),
             Spacer(1, 4),
-            RLImage(str(graph_cnn3d_path), width=150 * mm, height=56 * mm),
-        ])
+            RLImage(str(graph_cnn3d_path), width=150 * mm, height=50 * mm),
+        ]))
     return content
 
 
-def _limitations_section(mock_mode: bool, styles) -> list:
-    from .warnings import RESEARCH_USE_WARNING as _r  # noqa: F401
-
+def _limitations_section(mock_mode: bool, styles, section_number=6) -> list:
     block = [
-        Paragraph("9. 제한사항", styles["Heading1"]),
+        Paragraph(f"{section_number}. 분석 범위 및 해석 안내", styles["Heading1"]),
         Paragraph(MERGED_FULL_XAI_LIMITATION_TEXT, styles["BodyText"]),
         Paragraph(
             "GBM/3D CNN 라이브 추론은 SynthSeg 부피 또는 MNI 정합 캐시가 있는 scan에만 가능하며, "
@@ -735,6 +697,9 @@ def build_merged_full_pdf_report(
     styles, font_name, bold_name = _styles()
     table_style = _table_style(font_name, bold_name)
     clinical_table_style = _table_style(font_name, bold_name)
+    styles["ClinicalTitle"].fontSize = 16
+    styles["ClinicalTitle"].leading = 20
+    styles["Title"].keepWithNext = True
     report_id = uuid4().hex[:12]
 
     report_dir = ensure_report_dir(artifacts_root)
@@ -743,7 +708,7 @@ def build_merged_full_pdf_report(
     doc = SimpleDocTemplate(
         str(output_path), pagesize=A4,
         leftMargin=18 * mm, rightMargin=18 * mm, topMargin=16 * mm, bottomMargin=16 * mm,
-        title="Merged (OASIS-3+ADNI) Full Model-Output Sensitivity Report", author="clip_xai_app",
+        title="MediOn | 뇌 MRI 인공지능 분석 보고서", author="MediOn",
     )
 
     predicted_class_ensemble = max(ensemble_probs, key=ensemble_probs.get) if ensemble_probs else (
@@ -757,9 +722,12 @@ def build_merged_full_pdf_report(
 
         story.extend(_clinical_page1(
             predicted_class_ensemble, ensemble_probs, branch_probs, clip_analysis, cnn3d_analysis,
-            styles, clinical_table_style,
+            styles, clinical_table_style, metadata_rows=[
+                ("보고서 ID", report_id), ("생성 일시", run_metadata.get("timestamp", datetime.now().isoformat(timespec="seconds"))),
+                ("검사 ID", scan_id), ("데이터 출처 / split", f"{dataset_source} / {split}"),
+            ], input_level="입력 영상" if dataset_source == "사용자 업로드" else "스캔 단위",
         ))
-        story.append(Spacer(1, 10))
+        story.append(PageBreak())
         story.extend(_clinical_page2(
             clip_original_image, clip_heatmap_224, clip_analysis, cnn3d_volume, cnn3d_cam_volume,
             cnn3d_analysis, tmp_dir, styles, clinical_table_style,
@@ -773,12 +741,11 @@ def build_merged_full_pdf_report(
         story.append(Paragraph(TECHNICAL_APPENDIX_INTRO, styles["BodyText"]))
         story.append(Spacer(1, 4))
         story.append(Paragraph(f"보고서 ID: {report_id}", styles["BodyText"]))
-        story.append(Paragraph(RESEARCH_USE_WARNING, styles["BodyText"]))
         story.append(Spacer(1, 8))
 
         story.extend(_section_input_model(run_metadata, scan_id, dataset_source, split, true_label, table_style, styles))
         story.append(Spacer(1, 8))
-        story.extend(_section_prediction(predicted_class_ensemble, ensemble_probs, branch_probs, table_style, styles))
+        story.extend(_section_prediction(predicted_class_ensemble, ensemble_probs, branch_probs, table_style, styles, "입력 영상" if dataset_source == "사용자 업로드" else "스캔 단위"))
         story.append(Spacer(1, 8))
         story.extend(_section_clip_images(clip_original_image, clip_heatmap_224, clip_analysis, tmp_dir, table_style, styles))
         story.append(Spacer(1, 8))
@@ -793,15 +760,10 @@ def build_merged_full_pdf_report(
             story.append(Spacer(1, 8))
             story.extend(_section_cnn3d_before_after(cnn3d_analysis, cnn3d_volume, table_style, styles, tmp_dir))
             story.append(Spacer(1, 8))
-        story.extend(_section_masking_comparison(clip_analysis, cnn3d_analysis, table_style, styles))
+        next_section = 5 if cnn3d_analysis is not None and cnn3d_volume is not None else 4
+        story.extend(_section_graph_xai(clip_analysis, cnn3d_analysis, tmp_dir, styles, next_section))
         story.append(Spacer(1, 8))
-        story.extend(_section_stability(clip_analysis, cnn3d_analysis, table_style, styles))
-        story.append(Spacer(1, 8))
-        story.extend(_section_agreement(clip_analysis, cnn3d_analysis, table_style, styles))
-        story.append(Spacer(1, 8))
-        story.extend(_section_graph_xai(clip_analysis, cnn3d_analysis, tmp_dir, styles))
-        story.append(Spacer(1, 8))
-        story.extend(_limitations_section(mock_mode, styles))
+        story.extend(_limitations_section(mock_mode, styles, next_section + 1))
 
         doc.build(story, onFirstPage=_footer(report_id, font_name), onLaterPages=_footer(report_id, font_name))
 

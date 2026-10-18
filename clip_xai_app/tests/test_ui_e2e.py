@@ -37,20 +37,37 @@ def running_app():
         demo.close()
 
 
-def test_merged_tab_scan_id_analysis_via_real_http_api(running_app):
+@pytest.mark.parametrize("scan_id", [SAMPLE_SCAN_ID, "131_S_0691_71681"])
+def test_merged_tab_scan_id_analysis_via_real_http_api(running_app, scan_id):
     from gradio_client import Client
 
     client = Client(running_app.local_url)
     status_markdown, branch_table, gallery, pdf_path, images_zip_path, status_box = client.predict(
-        SAMPLE_SCAN_ID, None, api_name="/analyze_merged_ui",
+        scan_id, None, api_name="/analyze_merged_ui",
     )
 
-    assert SAMPLE_SCAN_ID in status_markdown
+    assert scan_id in status_markdown
     assert status_box == "Analysis completed."
     assert branch_table["data"]  # non-empty rows returned over the wire
     assert len(gallery) >= 3  # CLIP original/heatmap/overlay at minimum
     assert Path(pdf_path).exists()
     assert Path(pdf_path).suffix == ".pdf"
+    from pypdf import PdfReader
+    pages = PdfReader(pdf_path).pages
+    page_texts = [page.extract_text() or "" for page in pages]
+    text = "\n".join(page_texts)
+    for removed in ("점수는 모델 출력이며 질병 확률이나 정확도를 뜻하지 않습니다.",
+                    "CLIP 대표 MRI 단면의 XAI 분석 대상:", "3D CNN 분석 대상:"):
+        assert removed not in text
+    reviewer_page = next(i for i, value in enumerate(page_texts) if "보고서 검토 확인" in value)
+    detail_page = next(i for i, value in enumerate(page_texts) if "상세 분석 및 재현 정보" in value)
+    assert detail_page > reviewer_page
+    assert "MediOn" in text and "보고서 검토 확인" in text
+    assert "설명 결과의 일관성" not in text and "Spearman" not in text
+    if scan_id == "131_S_0691_71681":
+        for score in ("76.69%", "44.13%", "85.73%", "83.66%", "50.21%", "58.44%", "6.35%", "-79.38%p"):
+            assert score in text
+
     assert Path(images_zip_path).exists()
     assert Path(images_zip_path).suffix == ".zip"
 

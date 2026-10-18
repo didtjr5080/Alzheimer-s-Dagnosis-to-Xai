@@ -170,14 +170,16 @@ def test_build_merged_full_pdf_report_produces_a_valid_multi_branch_pdf(tmp_path
     )
     assert output_path.exists()
     reader = PdfReader(str(output_path))
-    assert len(reader.pages) >= 8  # clinical (3) + technical appendix sections
+    assert len(reader.pages) > 1
     text = "\n".join(page.extract_text() or "" for page in reader.pages)
     assert SAMPLE_SCAN_ID in text
+    for forbidden in ("설명 결과의 일관성", "설명 안정성", "안정성 판정", "부호 일치율", "가장 불안정한", "Spearman", "CAM-Perturbation 일치도", "세 마스킹 방식 비교"):
+        assert forbidden not in text
     assert "지지 근거 순위" in text
     assert "억제 근거 순위" in text
     assert "절대 민감도 순위" in text
-    assert "연구자용 기술 부록" in text
-    assert text.count("연구 검토자 확인") == 1  # never duplicated
+    assert "상세 분석 및 재현 정보" in text
+    assert text.count("보고서 검토 확인") == 1  # never duplicated
 
 
 def test_analyze_merged_uploaded_image_is_clip_only_with_no_ensemble():
@@ -223,4 +225,4 @@ def test_build_merged_full_pdf_report_handles_clip_only_upload_path(tmp_path):
     assert "지지 근거 순위" in text
     assert "절대 민감도 순위" in text
     assert "3D CNN 분석에 필요한" in text or "사용할 수 없습니다" in text
-    assert text.count("연구 검토자 확인") == 1
+    assert text.count("보고서 검토 확인") == 1

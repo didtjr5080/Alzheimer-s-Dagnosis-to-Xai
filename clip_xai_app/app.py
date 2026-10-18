@@ -326,9 +326,9 @@ def analyze_merged_ui(scan_id: str, image_file=None):
 
 
 def build_app() -> gr.Blocks:
-    with gr.Blocks(title="Alzheimer MRI XAI Decision Support Prototype") as demo:
-        gr.Markdown("# Alzheimer MRI XAI Decision Support Prototype")
-        gr.Markdown(f"**Research-use warning:** {RESEARCH_USE_WARNING}")
+    with gr.Blocks(title="MediOn | 뇌 MRI AI 분석 지원") as demo:
+        gr.Markdown("# MediOn | 뇌 MRI AI 분석 지원")
+        gr.Markdown("연구 및 의료진 검토 참고용 AI 분석입니다. 결과는 영상 판독·임상 정보와 종합하여 검토합니다.")
         gr.Dataframe(
             value=pd.DataFrame(registry_rows()),
             label="Model availability",
@@ -359,13 +359,13 @@ def build_app() -> gr.Blocks:
                         with gr.Column(scale=2):
                             merged_status_markdown = gr.Markdown("scan_id를 입력하고 분석을 실행하세요.")
                             merged_status_box = gr.Textbox(label="Status", interactive=False)
-                    merged_branch_table = gr.Dataframe(label="브랜치별 예측 확률 (CLIP / 3D CNN / GBM baseline)", interactive=False)
+                    merged_branch_table = gr.Dataframe(label="스캔 단위 모델 출력 점수 (CLIP / 3D CNN / GBM baseline; 업로드는 단일 영상)", interactive=False)
                     merged_gallery = gr.Gallery(
                         label="XAI: CLIP Grad-ECLIP (대표 슬라이스) + 3D CNN Grad-CAM (axial/coronal/sagittal)",
                         columns=3, object_fit="contain", height="auto",
                     )
-                    gr.Markdown(f"**XAI limitation:** {MERGED_FULL_XAI_LIMITATION_TEXT} {LATERALITY_NOT_VERIFIED_NOTE}")
-                    merged_pdf_output = gr.File(label="PDF report download")
+                    gr.Markdown("반응 지도는 모델이 민감하게 반응한 영상 영역을 표시합니다. 위치는 화면·배열 좌표 기준입니다.")
+                    merged_pdf_output = gr.File(label="뇌 MRI AI 분석 보고서 (PDF)")
                     merged_images_zip_output = gr.File(
                         label="발표용 이미지 모음 (zip): 원본 MRI / CLIP CAM 지도 / 3D CNN CAM 중첩 / Graph XAI(CLIP)"
                     )
@@ -408,7 +408,7 @@ def build_app() -> gr.Blocks:
                     height="auto",
                 )
                 gr.Markdown(f"**XAI limitation:** {XAI_LIMITATION_TEXT}")
-                pdf_output = gr.File(label="PDF report download")
+                pdf_output = gr.File(label="뇌 MRI AI 분석 보고서 (PDF)")
 
                 analyze_button.click(
                     analyze,
